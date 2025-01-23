@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import bg1 from "../../public/icon1.jpg";
 
 const Login = () => {
@@ -11,6 +12,7 @@ const Login = () => {
     agreeToTerms: false,
   });
 
+  const router = useRouter();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -27,6 +29,7 @@ const Login = () => {
     }
     // Handle login logic here
     console.log(formData);
+    router.push("/chat");
   };
 
   return (
