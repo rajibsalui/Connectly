@@ -1,4 +1,5 @@
 import React from 'react'
+import Navigation_Sidebar from './Navigation_Sidebar';
 
 interface Contact {
     id: number;
@@ -11,10 +12,10 @@ interface Contact {
 interface CallProps {
     contact: Contact;
 }
-  
+
 const Call = () => {
   return (
-    <div>Call</div>
+    <Navigation_Sidebar />
   )
 }
 
