@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import bg1 from "../../public/icon1.jpg"; // Fixed path to match project structure
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 const Register = () => {
   const [formData, setFormData] = useState({
