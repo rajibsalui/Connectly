@@ -1,8 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import connectDB from './config/db.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -13,13 +17,16 @@ app.get("/", async (req, res) => {
    });
 });
 
-app.get('/api', (req, res) => {
-    res.send('Hello from API!');
-    });
 
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
+const startServer= async ()=>{
+    try {
+        app.listen(port, () => {
+        connectDB();
+        console.log(`Server listening at http://localhost:${port}`);
+        });
+     } catch (error) {
+        console.log("Error starting server:",error);
+   }
+};
 
-
-    
+startServer();
