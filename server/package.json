@@ -1,0 +1,16 @@
+{
+ "name": "connectify",
+ "version": "1.0.0",
+ "description": "",
+ "main": "index.js",
+ "type": "module",
+ "scripts": {
+  "start": "nodemon index.js"
+ },
+ "dependencies": {
+  "cors": "^2.8.5",
+  "express": "^4.21.2",
+  "nodemon": "^3.1.9",
+  "socketio": "^1.0.0"
+ }
+}
