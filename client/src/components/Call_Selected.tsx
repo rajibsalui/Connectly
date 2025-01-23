@@ -63,13 +63,13 @@ const Call_Selected: React.FC<CallSelectedProps> = ({
           backgroundPosition: "center",
         }}
       >
-        {calls.length > 0 ? (
+        {calls &&
           calls.map((call) => (
             <div
               key={call.id}
               className={`flex relative w-full bg-zinc-300/15 rounded-xl mb-3`}
             >
-              <div className={`flex max-w-[70%] p-3 rounded-lg`}>
+              <div className={`flex  max-w-[70%] p-3 rounded-lg `}>
                 <div>
                   <FiPhoneCall className="text-2xl mt-1" />
                 </div>
@@ -83,10 +83,7 @@ const Call_Selected: React.FC<CallSelectedProps> = ({
                 <p className="absolute right-8 text-md">{call.duration}</p>
               </div>
             </div>
-          ))
-        ) : (
-          <p className="text-center text-gray-500">No calls available</p>
-        )}
+          ))}
       </div>
     </>
   );
