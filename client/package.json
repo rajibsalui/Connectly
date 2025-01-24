@@ -17,6 +17,7 @@
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0",
     "react-toastify": "^11.0.3",
+    "socket.io-client": "^4.8.1",
     "styled-components": "^6.1.14"
   },
   "devDependencies": {

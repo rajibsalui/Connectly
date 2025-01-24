@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import assets from "../assets/assets";
 import { FiPhoneCall } from "react-icons/fi";
 import { IoCallOutline, IoVideocamOutline } from "react-icons/io5";
@@ -39,6 +40,8 @@ const Call_Selected: React.FC<CallSelectedProps> = ({
   calls,
   assets,
 }) => {
+  const router = useRouter();
+
   return (
     <>
       <div className="p-4 border-b border-gray-300 bg-white">
@@ -50,8 +53,18 @@ const Call_Selected: React.FC<CallSelectedProps> = ({
           />
           <h2 className="font-semibold">{selectedChat.name}</h2>
           <div className="absolute right-12 text-2xl flex cursor-pointer space-x-10">
-            <IoCallOutline className="cursor-pointer" />
-            <IoVideocamOutline className="cursor-pointer" />
+            <IoCallOutline
+              onClick={() => {
+                router.push("/voice_call");
+              }}
+              className="cursor-pointer"
+            />
+            <IoVideocamOutline
+              onClick={() => {
+                router.push("/video_call");
+              }}
+              className="cursor-pointer"
+            />
           </div>
         </div>
       </div>
