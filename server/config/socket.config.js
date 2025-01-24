@@ -7,24 +7,70 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+const users = {}; // Map to store connected users
+
 io.on('connection', (socket) => {
-    console.log('a user connected');
+    console.log('User connected:', socket.id);
 
-    // Handle chat message
-    socket.on('chat message', (msg) => {
-        io.emit('chat message', msg);
+    // Handle user registration
+    socket.on('register', (username) => {
+        users[username] = socket.id;
+        socket.username = username;
+        console.log(`User registered: ${username}`);
     });
 
-    // Handle video call signaling
-    socket.on('video call', (signal) => {
-        socket.broadcast.emit('video call', signal);
+    // Handle one-to-one chat messages
+    socket.on('send-message', ({ recipient, message }) => {
+        const recipientSocketId = users[recipient];
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('receive-message', {
+                sender: socket.username,
+                message,
+            });
+        } else {
+            console.log('Recipient not found');
+        }
     });
 
+    // Handle video call signaling (offer, answer, candidate)
+    socket.on('call-user', ({ recipient, offer }) => {
+        const recipientSocketId = users[recipient];
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('incoming-call', {
+                caller: socket.username,
+                offer,
+            });
+        }
+    });
+
+
+    // Handle call answer from recipient to caller 
+    socket.on('answer-call', ({ recipient, answer }) => {
+        const recipientSocketId = users[recipient];
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('call-answered', {
+                answer,
+            });
+        }
+    });
+
+    // Handle ICE candidate exchange between caller and recipient
+    socket.on('send-candidate', ({ recipient, candidate }) => {
+        const recipientSocketId = users[recipient];
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('receive-candidate', {
+                candidate,
+            });
+        }
+    });
+
+    // Handle disconnection
     socket.on('disconnect', () => {
-        console.log('user disconnected');
+        console.log('User disconnected:', socket.id);
+        delete users[socket.username];
     });
 });
 
 server.listen(3000, () => {
-    console.log('listening on *:3000');
+    console.log('Server is running on http://localhost:3000');
 });
