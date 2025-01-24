@@ -1,5 +1,8 @@
 'use client'
 import React from "react";
+import { FaPhoneAlt, FaVideo } from 'react-icons/fa'; // Importing React icons
+import { useRouter } from 'next/navigation';
+
 
 interface Contact {
   id: number;
@@ -31,16 +34,27 @@ interface ChatSelectedProps {
 }
 
 const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) => {
+  const router = useRouter();
   return (
     <>
       <div className="p-4 border-b border-gray-300 bg-white">
-        <div className="flex items-center space-x-4">
-          <img
-            src={selectedChat.avatar}
-            alt={selectedChat.name}
-            className="w-10 h-10 rounded-full"
-          />
-          <h2 className="font-semibold">{selectedChat.name}</h2>
+        <div className="flex items-center justify-between space-x-4">
+          <div className="flex items-center space-x-4">
+            <img
+              src={selectedChat.avatar}
+              alt={selectedChat.name}
+              className="w-10 h-10 rounded-full"
+            />
+            <h2 className="font-semibold">{selectedChat.name}</h2>
+          </div>
+          <div className="flex space-x-10 px-6">
+            <FaPhoneAlt onClick={()=>{
+              router.push('/voice_call');
+            }} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />
+            <FaVideo onClick={()=>{
+              router.push('/video_call');
+            }} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Video Call" />
+          </div>
         </div>
       </div>
       <div
