@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import bg1 from "../../public/icon1.jpg"; // Fixed path to match project structure
+import { useRouter } from "next/navigation";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ const Register = () => {
     username: "",
     agreeToTerms: false,
   });
+
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -28,6 +31,7 @@ const Register = () => {
     }
     // Handle signup logic here
     console.log(formData);
+    router.push("/chat")
   };
 
   return (
