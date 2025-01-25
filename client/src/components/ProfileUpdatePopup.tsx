@@ -3,39 +3,37 @@ import assets from "../assets/assets";
 import Image from "next/image";
 import '../app/globals.css';
 
-
-
 const ProfileUpdatePopup = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [number, setNumber] = useState("");
-  const popupRef = useRef(null);
+  const popupRef = useRef<HTMLDivElement | null>(null);
 
   const togglePopup = () => {
     setIsOpen(!isOpen);
   };
 
-  const handleClickOutside = (event) => {
-    if (popupRef.current && !popupRef.current.contains(event.target)) {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
       setIsOpen(false);
       setProfileImage(null);
     }
   };
 
-  const handleImageChange = (event) => {
-    const file = event.target.files[0];
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result);
+        setProfileImage(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     // Handle form submission logic here
     console.log("Profile updated:", { name, email, profileImage });
@@ -59,8 +57,8 @@ const ProfileUpdatePopup = () => {
         <Image
           src={assets.profile_img}
           alt="Profile Update"
-          width={140}
-          height={140}
+          width={40}
+          height={40}
           className="rounded-full"
         />
       </button>
