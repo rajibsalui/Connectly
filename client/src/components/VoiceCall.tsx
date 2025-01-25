@@ -76,7 +76,7 @@ const VoiceCall: React.FC = () => {
     }
   };
 
-  const endCall = () => {
+  const handleEndCall = () => {
     setIsCallActive(false);
     localStreamRef.current?.getTracks().forEach(track => track.stop());
   };
@@ -97,7 +97,7 @@ const VoiceCall: React.FC = () => {
         <audio ref={remoteAudioRef} autoPlay className="hidden"></audio>
       </div>
       <div className="flex justify-center mt-4">
-        <button onClick={endCall} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">
+        <button onClick={handleEndCall} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">
           End Call
         </button>
       </div>

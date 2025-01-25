@@ -3,6 +3,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useRouter } from 'next/navigation';
 import CallEnd from './Call_End'; // Import the CallEnd component
+import { FcEndCall } from "react-icons/fc";
+import { LuVideo, LuVideoOff } from "react-icons/lu";
+import { IoVideocamOutline } from "react-icons/io5";
+import { AiOutlineAudioMuted } from "react-icons/ai";
+import { PiMicrophone } from "react-icons/pi";
 
 // Define signaling server URL
 const SOCKET_SERVER_URL = "http://localhost:3000";
@@ -11,8 +16,11 @@ const VideoCall: React.FC = () => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isCallActive, setIsCallActive] = useState(true);
+  const [isSwitched, setIsSwitched] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [callDuration, setCallDuration] = useState(0); // State to track call duration
+  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null); // State to store interval ID
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -87,12 +95,25 @@ const VideoCall: React.FC = () => {
 
     socketRef.current.emit("offer", offer);
     setIsCallActive(true);
+    
+    // Start the call duration timer
+    const id = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+    setIntervalId(id);
   };
 
   const endCall = () => {
     setIsCallActive(false);
     setIsVideoEnabled(false);
     localStream?.getTracks().forEach(track => track.stop());
+    
+    // Clear the interval for call duration
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+    
     // Instead of redirecting, show the CallEnd component
   };
 
@@ -136,23 +157,21 @@ const VideoCall: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between h-screen p-4 bg-black">
+    <div className="flex relative flex-col items-center justify-between h-screen p-4 bg-black">
       <div className="flex-1 flex justify-center items-center">
-        <video ref={localVideoRef} autoPlay playsInline muted className="w-1/2 rounded-lg border-2 border-white"></video>
-        <video ref={remoteVideoRef} autoPlay playsInline className="w-1/2 ml-7 rounded-lg border-2 border-white"></video>
+        <video ref={localVideoRef} onClick={()=>setIsSwitched(true)} autoPlay playsInline muted className={isSwitched?`absolute w-screen h-screen z-10 top-0 rounded-lg transform scale-x-[-1]`:`absolute h-32 lg:h-48  ml-7 bottom-16 right-6 rounded-lg border-[0.8px] z-20 transform scale-x-[-1] border-white`}></video> {/* Flip the local video horizontally */}
+        <video ref={remoteVideoRef} onClick={()=>setIsSwitched(false)} autoPlay playsInline className={isSwitched?`absolute h-32 lg:h-48  ml-7 bottom-16 right-6 rounded-lg border-[0.8px] z-20 transform scale-x-[-1] border-white`:"absolute w-screen h-screen z-10 top-0 rounded-lg transform scale-x-[-1]"}></video>
       </div>
-      <div className="flex justify-between w-full mt-4">
-        {/* <button onClick={startCall} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-200">
-          Start Call
-        </button> */}
-        <button onClick={endCall} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">
-          End Call
+      <div className="flex justify-between lg:w-1/2 w-full mt-4">
+        <div className="text-white absolute bottom-20 text-xl font-medium z-30 left-1/2 -translate-x-1/2">{Math.floor(callDuration / 60)}:{(callDuration % 60).toString().padStart(2, '0')}</div> {/* Display call duration */}
+        <button onClick={endCall} className="px-4 z-30 py-2 bg-red-200 rounded-lg hover:bg-red-600 transition duration-200">
+        <FcEndCall className="w-full text-2xl" />
         </button>
-        <button onClick={toggleVideo} className={`px-4 py-2 ${isVideoEnabled ? 'bg-blue-500' : 'bg-gray-500'} text-white rounded-lg hover:bg-blue-600 transition duration-200`}>
-          {isVideoEnabled ? 'Turn Off Video' : 'Turn On Video'}
+        <button onClick={toggleVideo} className={`px-4 z-30 py-2 ${isVideoEnabled ? 'bg-blue-500' : 'bg-gray-500'} text-white rounded-lg hover:bg-blue-600 transition duration-200`}>
+          {isVideoEnabled ? <LuVideoOff className="w-full text-2xl"/> : <LuVideo className="w-full text-2xl"/>}
         </button>
-        <button onClick={toggleAudio} className={`px-4 py-2 ${isAudioEnabled ? 'bg-blue-500' : 'bg-gray-500'} text-white rounded-lg hover:bg-blue-600 transition duration-200`}>
-          {isAudioEnabled ? 'Mute' : 'Unmute'}
+        <button onClick={toggleAudio} className={`px-4 z-30 py-2 ${isAudioEnabled ? 'bg-blue-500' : 'bg-gray-500'} text-white rounded-lg hover:bg-blue-600 transition duration-200`}>
+          {isAudioEnabled ? <AiOutlineAudioMuted className="w-full text-2xl"/> : <PiMicrophone className="w-full text-2xl"/>}
         </button>
       </div>
     </div>
