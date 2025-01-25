@@ -2,7 +2,7 @@
 import React from "react";
 import { FaPhoneAlt, FaVideo } from 'react-icons/fa'; // Importing React icons
 import { useRouter } from 'next/navigation';
-
+import { IoCallOutline, IoVideocamOutline } from "react-icons/io5";
 
 interface Contact {
   id: number;
@@ -35,6 +35,23 @@ interface ChatSelectedProps {
 
 const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) => {
   const router = useRouter();
+  const openCallWindow = () => {
+    const callWindow = window.open(
+      "/voice_call",
+      "_blank",
+      "width=400,height=600,top=100,left=100"
+    );
+  };
+
+  const openVideoCallWindow = () => {
+    const videoCallWindow = window.open(
+      "/video_call",
+      "_blank",
+      "width=400,height=600,top=100,left=100"
+    );
+
+  };
+  
   return (
     <>
       <div className="p-4 border-b border-gray-300 bg-white">
@@ -48,12 +65,8 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
             <h2 className="font-semibold">{selectedChat.name}</h2>
           </div>
           <div className="flex space-x-10 px-6">
-            <FaPhoneAlt onClick={()=>{
-              router.push('/voice_call');
-            }} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />
-            <FaVideo onClick={()=>{
-              router.push('/video_call');
-            }} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Video Call" />
+            <IoCallOutline onClick={openCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />
+            <IoVideocamOutline onClick={openVideoCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Video Call" />
           </div>
         </div>
       </div>

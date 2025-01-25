@@ -21,10 +21,11 @@ const Chat_Contacts = ({ contact, selectedChat, setSelectedChat }: ChatContactsP
   return (
     <div
       onClick={() => setSelectedChat(contact)}
-      className={`flex items-center p-4 hover:bg-gray-100 cursor-pointer ${
+      className={`flex relative items-center p-4 hover:bg-gray-100 cursor-pointer ${
         selectedChat?.id === contact.id ? "bg-gray-100" : ""
       }`}
     >
+      {selectedChat?.id === contact.id ? <p className="bg-green-400 absolute h-6 w-[2.8px] left-[5px] top-7"></p> :" " } 
       <div className="relative">
         <img
           src={contact.avatar}

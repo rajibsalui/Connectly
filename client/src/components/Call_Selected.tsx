@@ -41,6 +41,23 @@ const Call_Selected: React.FC<CallSelectedProps> = ({
   assets,
 }) => {
   const router = useRouter();
+  
+  const openCallWindow = () => {
+    const callWindow = window.open(
+      "/voice_call",
+      "_blank",
+      "width=400,height=600,top=100,left=100"
+    );
+  };
+
+  const openVideoCallWindow = () => {
+    const videoCallWindow = window.open(
+      "/video_call",
+      "_blank",
+      "width=400,height=600,top=100,left=100"
+    );
+
+  };
 
   return (
     <>
@@ -53,18 +70,8 @@ const Call_Selected: React.FC<CallSelectedProps> = ({
           />
           <h2 className="font-semibold">{selectedChat.name}</h2>
           <div className="absolute right-12 text-2xl flex cursor-pointer space-x-10">
-            <IoCallOutline
-              onClick={() => {
-                router.push("/voice_call");
-              }}
-              className="cursor-pointer"
-            />
-            <IoVideocamOutline
-              onClick={() => {
-                router.push("/video_call");
-              }}
-              className="cursor-pointer"
-            />
+            <IoCallOutline onClick={openCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />
+            <IoVideocamOutline onClick={openVideoCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Video Call" />
           </div>
         </div>
       </div>

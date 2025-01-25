@@ -10,7 +10,7 @@ import { MdAddIcCall } from "react-icons/md";
 import { LuMenu } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-
+import ProfileUpdatePopup from './ProfileUpdatePopup'
 const Navigation_Sidebar = () => {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -34,8 +34,8 @@ const Navigation_Sidebar = () => {
             {isExpanded && <span className="ml-3">Chat</span>}
           </div>
         </div>
-        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer">
-          <div className="flex items-center" onClick={() => router.push("/status")}>
+        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => router.push("/status")}>
+          <div className="flex items-center">
             <Image src={assets.help_icon} alt="Status" width={24} height={24} />
             {isExpanded && <span className="ml-3">Status</span>}
           </div>
@@ -54,15 +54,9 @@ const Navigation_Sidebar = () => {
             {isExpanded && <span className="ml-3">Settings</span>}
           </div>
         </div>
-        <div className="p-2 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => router.push("/profile-update")}>
+        <div className="p-2 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => <ProfileUpdatePopup/>}>
           <div className="flex items-center">
-            <Image
-              src={assets.profile_img}
-              alt="Account" 
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
+            <ProfileUpdatePopup/>
             {isExpanded && <span className="ml-3">Profile</span>}
           </div>
         </div>

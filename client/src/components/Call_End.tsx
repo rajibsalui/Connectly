@@ -3,7 +3,8 @@ import React, { useEffect } from 'react';
 const CallEnd: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
-      window.location.href = '/chat'; // Redirect to chat page
+      window.close(); // Close the window after 1 second
+      // window.location.href = '/chat'; // Redirect to chat page
     }, 2000); // Redirect after 2 seconds
 
     return () => clearTimeout(timer); // Cleanup timer on unmount
