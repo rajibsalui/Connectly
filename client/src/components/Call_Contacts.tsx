@@ -21,8 +21,8 @@ const Call_Contacts = ({ contact, selectedChat, setSelectedChat }: CallContactsP
   return (
     <div
       onClick={() => setSelectedChat(contact)}
-      className={`flex relative items-center p-4 hover:bg-gray-100 cursor-pointer ${
-        selectedChat?.id === contact.id ? "bg-gray-100" : ""
+      className={`flex relative m-2 rounded-xl transition-all items-center p-4 box3 cursor-pointer ${
+        selectedChat?.id === contact.id ? "box2" : ""
       }`}
     >
       {selectedChat?.id === contact.id ? <p className="bg-green-400 absolute h-6 w-[2.8px] left-[5px] top-7"></p> :" " } 
@@ -35,8 +35,8 @@ const Call_Contacts = ({ contact, selectedChat, setSelectedChat }: CallContactsP
       </div>
       <div className="ml-4 flex-1 relative">
         <h3 className="font-semibold">{contact.name}</h3>
-        <p className="text-sm text-gray-500">{contact.outGoing?"Outgoing":"Incomming"}</p>
-        <p className="text-sm absolute right-1 top-1/2 text-gray-800">{contact.timestamp}</p>
+        <p className="text-sm ">{contact.outGoing?"Outgoing":"Incomming"}</p>
+        <p className="text-sm absolute right-1 top-1/2 ">{contact.timestamp}</p>
       </div>
     </div>
   )

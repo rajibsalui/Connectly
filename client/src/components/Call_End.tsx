@@ -11,7 +11,7 @@ const CallEnd: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center h-screen">
       <h1 className="text-2xl font-semibold mb-4">Call Ended</h1>
       <p className="text-lg">Redirecting to chat...</p>
       <div className="loader mt-4">

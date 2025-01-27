@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "CONNECTLY",
-  description: "It is a chat and group video calling website, with AI chat features",
+  description:
+    "It is a chat and group video calling website, with AI chat features",
   icons: {
     icon: [
       {
@@ -26,7 +28,7 @@ export const metadata: Metadata = {
         type: "image/png",
         sizes: "32x32",
       },
-    ]
+    ],
   },
 };
 
@@ -37,12 +39,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        // Remove the attribute added by the browser extension
-        cz-shortcut-listen={"true"}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} cz-shortcut-listen={"true"}>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
