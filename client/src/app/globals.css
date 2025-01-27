@@ -12,6 +12,37 @@ html, body{
   width: 100%;
   height: 100%;
 }
+body{
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border-color: var(--box1-bg-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.video{
+  background-color: var(--bg-color);
+}
+.popup{
+  background-color: var(--bg-color);
+}
+.hovtext{
+  color: var(--box1-bg-color);
+}
+.box5{
+  border-color: var(--box1-bg-color);
+}
+.box4{
+  background-color:  var(--text-color);
+  color: var(--bg-color);
+}
+.box3:hover{
+  background-color: var(--box2-bg-color);
+}
+.box1{
+  background-color: var(--box1-bg-color);
+}
+.box2{
+  background-color: var(--box2-bg-color);
+}
 
 /* Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
@@ -23,4 +54,90 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+
+:root {
+  --bg-color: #FCF8F3;
+  --box1-bg-color: #AEDADD;
+  --box2-bg-color: #DB996C;
+  --text-color: #6E7DA2;
+}
+
+[data-theme="light"] {
+  --bg-color: #FFFAEC;
+  --box1-bg-color: #F5ECD5;
+  --box2-bg-color: #578E7E;
+  --text-color: #3D3D3D;
+}
+
+[data-theme="darkwinter"] {
+  --bg-color: #1A3636;
+  --box1-bg-color: #40534C;
+  --box2-bg-color: #677D6A;
+  --text-color: #D6BD98;
+}
+[data-theme="vintagecoffee"] {
+  --bg-color: #FEFAF6;
+  --box1-bg-color: #EADBC8;
+  --box2-bg-color: #DAC0A3;
+  --text-color: #102C57;
+}
+
+[data-theme="pastelwarm"] {
+  --bg-color: #557571;
+  --box1-bg-color: #D49A89;
+  --box2-bg-color: #F7D1BA;
+  --text-color: #F4F4F4;
+}
+
+[data-theme="vintagenature"] {
+  --bg-color: #FFF8E8;
+  --box1-bg-color: #F7EED3;
+  --box2-bg-color: #AAB396;
+  --text-color: #674636;
+}
+
+[data-theme="wintercold"] {
+  --bg-color: #213555;
+  --box1-bg-color: #3E5879;
+  --box2-bg-color: #D8C4B6;
+  --text-color: #F5EFE7;
+}
+
+[data-theme="nightsea"] {
+  --bg-color: #092635;
+  --box1-bg-color: #1B4242;
+  --box2-bg-color: #5C8374;
+  --text-color: #9EC8B9;
+}
+
+[data-theme="skinwarm"] {
+  --bg-color: #A75D5D;
+  --box1-bg-color: #D3756B;
+  --box2-bg-color: #F0997D;
+  --text-color: #FFC3A1;
+}
+
+[data-theme="earthvintage"] {
+  --bg-color: #FAF7F0;
+  --box1-bg-color: #D8D2C2;
+  --box2-bg-color: #B17457;
+  --text-color: #4A4947;
+}
+
+/* .popupscroll::-webkit-scrollbar {
+  display: none;
+} */
+.popupscroll::-webkit-scrollbar {
+  width: 5px;
+}
+/* .popupscroll::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+} */
+ 
+/* Handle */
+.popupscroll::-webkit-scrollbar-thumb {
+  background: #a7a7a7b7;
+  border-radius: 5px;
 }

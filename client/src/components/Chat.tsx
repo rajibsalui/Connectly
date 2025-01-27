@@ -87,12 +87,12 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen">
       {/* Navigation Sidebar */}
       <Chat_Navigation_Sidebar />
 
       {/* Left Sidebar */}
-      <div className="w-1/4 border-r border-gray-300 bg-white">
+      <div className="w-1/4 border-r box5 ">
         <Chat_Search />
         <div className="overflow-y-auto h-[calc(100vh-80px)]">
           {contacts.map((contact: Contact) => (
@@ -115,8 +115,8 @@ const Chat = () => {
             assets={chatAssets}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <p className="text-gray-500">Select a chat to start messaging</p>
+          <div className="flex-1 flex items-center justify-center ">
+            <p className="">Select a chat to start messaging</p>
           </div>
         )}
       </div>

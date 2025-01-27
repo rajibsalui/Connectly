@@ -158,7 +158,7 @@ const Call: React.FC = () => {
     <>
       <div className="flex h-screen">
         <Navigation_Sidebar />
-        <div className="w-1/4 border-r border-gray-300 bg-white">
+        <div className="w-1/4 border-r border-gray-300">
           <Call_Search />
           <div className="overflow-y-auto h-[calc(100vh-80px)]">
             {contacts.map((contact: Contact) => (
@@ -179,18 +179,19 @@ const Call: React.FC = () => {
               assets={chatAssets}
             />
           ) : (
-            <div className="flex-1 flex space-x-5 items-center justify-center bg-gray-50">
-              <Image
+            <div className="flex-1 flex space-x-5 items-center justify-center">
+              {selectedChat && <Image
                 src={assets.chat_bg}
                 alt="bg1"
                 className="w-full -z-10 h-screen object-cover fixed top-0 left-0"
                 priority
-              />
-              <div className="text-6xl flex flex-col items-center justify-center bg-zinc-300/20 rounded-lg p-3 text-gray-800">
+              />}
+              
+              <div className="text-6xl flex flex-col items-center justify-center bg-zinc-300/20 rounded-lg p-3 ">
                 <FcVideoCall className="" />
                 <p className="text-lg font-semibold">Start a Call</p>
               </div>
-              <div className="text-6xl flex flex-col items-center justify-center bg-zinc-300/20 rounded-lg p-3 text-gray-800">
+              <div className="text-6xl flex flex-col items-center justify-center bg-zinc-300/20 rounded-lg p-3 ">
                 <PiNumpadLight />
                 <p className="text-lg font-semibold">Call a Number</p>
               </div>

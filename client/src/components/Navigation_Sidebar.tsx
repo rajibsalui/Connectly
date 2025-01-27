@@ -11,6 +11,9 @@ import { LuMenu } from 'react-icons/lu';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ProfileUpdatePopup from './ProfileUpdatePopup'
+import SettingsPage from './Setting_page';
+import { TbCircleDashed } from 'react-icons/tb';
+
 const Navigation_Sidebar = () => {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,44 +23,45 @@ const Navigation_Sidebar = () => {
   };
 
   return (
-    <div className={`${isExpanded ? 'w-48' : 'w-20'} transition-width duration-300 bg-white border-r border-gray-300 flex flex-col items-center py-6`}>
+    <div className={`${isExpanded ? 'w-60' : 'w-16'} transition-width duration-300 border-r box5 flex flex-col items-center py-6`}>
       <div className="flex-1 p-2 flex-col items-center justify-center space-y-8 w-full">
-        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={toggleSidebar}>
+        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={toggleSidebar}>
           <div className="flex items-center">
             <LuMenu className="text-3xl" />
-            {isExpanded && <span className="ml-3">Menu</span>}
+            {isExpanded && <span className="ml-3 font-semibold ">Menu</span>}
           </div>
         </div>
-        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => router.push("/chat")}>
+        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push("/chat")}>
           <div className="flex items-center">
             <IoChatbubbleEllipsesOutline className="text-3xl" />
-            {isExpanded && <span className="ml-3">Chat</span>}
+            {isExpanded && <span className="ml-3 font-semibold ">Chat</span>}
           </div>
         </div>
-        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => router.push("/status")}>
+        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push("/status")}>
           <div className="flex items-center">
-            <Image src={assets.help_icon} alt="Status" width={24} height={24} />
-            {isExpanded && <span className="ml-3">Status</span>}
+            <TbCircleDashed className="text-3xl" />
+            {isExpanded && <span className="ml-3 font-semibold ">Status</span>}
           </div>
         </div>
-        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => router.push("/call")}>
+        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push("/call")}>
           <div className="flex items-center">
             <MdAddIcCall className="text-3xl" />
-            {isExpanded && <span className="ml-3">Call</span>}
+            {isExpanded && <span className="ml-3 font-semibold ">Call</span>}
           </div>
         </div>
       </div>
       <div className="flex flex-col p-2 space-y-6 w-full">
-        <div className="p-3 hover:bg-gray-100 rounded-xl cursor-pointer">
+        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => <SettingsPage/>}>
           <div className="flex items-center">
-            <IoSettingsOutline className="text-3xl" />
-            {isExpanded && <span className="ml-3">Settings</span>}
+            {/* <IoSettingsOutline className="text-3xl" /> */}
+            <SettingsPage/>
+            {isExpanded && <span className="ml-3 font-semibold ">Settings</span>}
           </div>
         </div>
-        <div className="p-2 hover:bg-gray-100 rounded-xl cursor-pointer" onClick={() => <ProfileUpdatePopup/>}>
+        <div className="p-2 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => <ProfileUpdatePopup/>}>
           <div className="flex items-center">
             <ProfileUpdatePopup/>
-            {isExpanded && <span className="ml-3">Profile</span>}
+            {isExpanded && <span className="ml-3 font-semibold ">Profile</span>}
           </div>
         </div>
       </div>

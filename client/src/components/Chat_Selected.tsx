@@ -54,7 +54,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
   
   return (
     <>
-      <div className="p-4 border-b border-gray-300 bg-white">
+      <div className="p-4 border-b box5 ">
         <div className="flex items-center justify-between space-x-4">
           <div className="flex items-center space-x-4">
             <img
@@ -62,7 +62,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
               alt={selectedChat.name}
               className="w-10 h-10 rounded-full"
             />
-            <h2 className="font-semibold">{selectedChat.name}</h2>
+            <h2 className="font-semibold ">{selectedChat.name}</h2>
           </div>
           <div className="flex space-x-10 px-6">
             <IoCallOutline onClick={openCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />
@@ -71,7 +71,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
         </div>
       </div>
       <div
-        className="flex-1 overflow-y-auto p-4"
+        className="flex-1 box1 overflow-y-auto p-4"
         style={{
           backgroundImage: `url(${assets.chat_bg})`,
           backgroundSize: "cover",
@@ -87,7 +87,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
           >
             <div
               className={`max-w-[70%] p-3 rounded-lg ${
-                message.sender === "me" ? "bg-blue-500 text-white" : "bg-white"
+                message.sender === "me" ? "box2" : "box1"
               }`}
             >
               <p>{message.text}</p>
@@ -96,7 +96,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
           </div>
         ))}
       </div>
-      <div className="p-4 border-t border-gray-300 bg-white">
+      <div className="p-4 border-t box5">
         <div className="flex items-center space-x-4">
           <img
             src={assets.gallery_icon}
@@ -106,7 +106,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
           <input
             type="text"
             placeholder="Type a message..."
-            className="flex-1 p-2 rounded-lg bg-gray-100"
+            className="flex-1 p-2 rounded-lg bg-transparent"
           />
           <img
             src={assets.send_button}

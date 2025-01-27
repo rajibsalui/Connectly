@@ -157,10 +157,10 @@ const VideoCall: React.FC = () => {
   }
 
   return (
-    <div className="flex relative flex-col items-center justify-between h-screen p-4 bg-black">
+    <div className="flex relative flex-col items-center justify-between h-screen p-4 bg-black ">
       <div className="flex-1 flex justify-center items-center">
-        <video ref={localVideoRef} onClick={()=>setIsSwitched(true)} autoPlay playsInline muted className={isSwitched?`absolute w-screen h-screen z-10 top-0 rounded-lg transform scale-x-[-1]`:`absolute h-32 lg:h-48  ml-7 bottom-16 right-6 rounded-lg border-[0.8px] z-20 transform scale-x-[-1] border-white`}></video> {/* Flip the local video horizontally */}
-        <video ref={remoteVideoRef} onClick={()=>setIsSwitched(false)} autoPlay playsInline className={isSwitched?`absolute h-32 lg:h-48  ml-7 bottom-16 right-6 rounded-lg border-[0.8px] z-20 transform scale-x-[-1] border-white`:"absolute w-screen h-screen z-10 top-0 rounded-lg transform scale-x-[-1]"}></video>
+        <video ref={localVideoRef} onClick={()=>setIsSwitched(true)} autoPlay playsInline muted className={isSwitched?`absolute w-screen h-screen z-10 top-0 rounded-lg transform scale-x-[-1]`:`absolute h-32 lg:h-48  ml-7 bottom-16 right-6 rounded-lg border-[0.8px] z-20 transform scale-x-[-1] box5`}></video> {/* Flip the local video horizontally */}
+        <video ref={remoteVideoRef} onClick={()=>setIsSwitched(false)} autoPlay playsInline className={isSwitched?`absolute h-32 lg:h-48  ml-7 bottom-16 right-6 rounded-lg border-[0.8px] z-20 transform scale-x-[-1] box5`:"absolute w-screen h-screen z-10 top-0 rounded-lg transform scale-x-[-1]"}></video>
       </div>
       <div className="flex justify-between lg:w-1/2 w-full mt-4">
         <div className="text-white absolute bottom-20 text-xl font-medium z-30 left-1/2 -translate-x-1/2">{Math.floor(callDuration / 60)}:{(callDuration % 60).toString().padStart(2, '0')}</div> {/* Display call duration */}
