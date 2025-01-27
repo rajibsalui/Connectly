@@ -8,6 +8,7 @@
   "start": "nodemon index.js"
  },
  "dependencies": {
+  "@huggingface/inference": "^3.1.2",
   "axios": "^1.7.9",
   "cors": "^2.8.5",
   "dotenv": "^16.4.7",

@@ -19,7 +19,8 @@ export const endCall = async(req, res) => {
     try {
         const { callId } = req.body;
         const callended = await Call.findOneAndDelete({ callId });
-        res.status(200).json({ message: 'Video call ended' });
+        callended.status = 'ended';
+        res.status(200).json({ message: 'Video call ended', callended });
     } catch (error) {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
