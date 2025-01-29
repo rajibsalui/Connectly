@@ -1,4 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Connectly - Real-time Chat & Video Calling Application
+
+A modern chat application built with Next.js that enables real-time messaging, voice calls, and video calls with AI-powered features.
+
+## Features
+
+- 💬 Real-time chat messaging
+- 📞 Voice calling
+- 🎥 Video calling
+- 🎨 Multiple themes
+- 👤 User authentication
+- 🔒 Secure communications
+- 🤖 AI-powered chat assistance
+- 📱 Responsive design
+- 🌐 Status updates
+- 👥 Contact management
+
+## Technology Stack
+
+- **Frontend:**
+  - Next.js 13 (App Router)
+  - TypeScript
+  - Tailwind CSS
+  - Socket.io Client
+  - React Icons
+
+- **Backend:**
+  - Node.js
+  - Express.js
+  - MongoDB
+  - Socket.io
+  - Firebase
+  - Hugging Face AI
+
+## Prerequisites
+
+Before running this project, make sure you have:
+
+- Node.js (v18 or higher)
+- MongoDB
+- Firebase account
+- Hugging Face API key
+
+## Installation & Setup
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/connectly.git
+cd connectly
+````
+# Install client dependencies
+cd client
+npm install
+
+# Install server dependencies
+cd ../server
+npm install
+
+## Project Structure
+
+```
+connectly/
+├── client/                 # Frontend Next.js application
+│   ├── src/
+│   │   ├── app/           # Next.js 13 app directory
+│   │   ├── components/    # React components
+│   │   ├── context/       # React context providers
+│   │   └── assets/        # Static assets
+│   └── public/            # Public assets
+│
+└── server/                # Backend Node.js application
+    ├── config/           # Configuration files
+    ├── controllers/      # Route controllers
+    ├── models/          # Database models
+    ├── routes/          # API routes
+    └── services/        # Business logic
+```
 
 ## Getting Started
 
