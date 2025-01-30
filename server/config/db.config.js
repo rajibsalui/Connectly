@@ -13,4 +13,6 @@ const connectDB = async () => {
       .catch((error) => console.log("Error connecting to the database: ", error));
   };
 
+//connectDB();
+
 export default connectDB ;

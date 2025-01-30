@@ -30,7 +30,7 @@ A modern chat application built with Next.js that enables real-time messaging, v
   - MongoDB
   - Socket.io
   - Firebase
-  - Hugging Face AI
+  - Hugging Face AI (Mistral-7B-Instruct-v0.3)
 
 ## Prerequisites
 
