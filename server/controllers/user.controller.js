@@ -2,6 +2,8 @@ import User from "../models/user.model.js"; // Import the User model
 import bcrypt from "bcrypt"; // Import bcrypt for password hashing
 import jwt from "jsonwebtoken"; // Import jsonwebtoken for token generation
 
+
+
 // Register a new user
 export const register = async (req, res) => {
   const { email, fullName, password } = req.body;
@@ -12,13 +14,14 @@ export const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: "User already exists." });
     }
-    
-    const hashedPassword = await bcrypt.hash(password, 10);
+    //using gensalt to generate a salt
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create a new user
     const newUser = new User({
-      email,
-      fullName,
+      email: email,
+      fullName: fullName,
       password: hashedPassword,
     });
 
@@ -27,6 +30,7 @@ export const register = async (req, res) => {
 
     // Generate a token
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
+    
 
     res.status(201).json({ token, user: newUser });
   } catch (error) {
@@ -53,6 +57,11 @@ export const login = async (req, res) => {
 
     // Generate a token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET );
+    res.cookie('authToken', token, {
+      httpOnly: true,  // Prevents client-side JavaScript from accessing the cookie
+      secure: true,    // Ensures cookie is only sent over HTTPS
+      sameSite: 'strict', // Protects against CSRF attacks
+    });
 
     res.status(200).json({ token, user });
   } catch (error) {
