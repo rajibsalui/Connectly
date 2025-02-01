@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { IoCallOutline, IoVideocamOutline } from "react-icons/io5";
 
 interface Contact {
-  id: number;
-  name: string;
-  avatar: string;
+  _id: string;
+  firstName: string;
+  lastName: string;
+  profilePic: string;
+  onlineStatus: boolean;
+  lastMessage?: string;
 }
 
 interface Message {
@@ -58,11 +61,11 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
         <div className="flex items-center justify-between space-x-4">
           <div className="flex items-center space-x-4">
             <img
-              src={selectedChat.avatar}
-              alt={selectedChat.name}
+              src={selectedChat.profilePic}
+              alt={`${selectedChat.firstName} ${selectedChat.lastName}`}
               className="w-10 h-10 rounded-full"
             />
-            <h2 className="font-semibold ">{selectedChat.name}</h2>
+            <h2 className="font-semibold ">{`${selectedChat.firstName} ${selectedChat.lastName}`}</h2>
           </div>
           <div className="flex space-x-10 px-6">
             <IoCallOutline onClick={openCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />
@@ -78,7 +81,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
           backgroundPosition: "center",
         }}
       >
-        {messages[selectedChat.id].map((message) => (
+        {/* {messages[selectedChat.id].map((message) => (
           <div
             key={message.id}
             className={`flex ${
@@ -94,7 +97,7 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
               <p className="text-xs mt-1 opacity-70">{message.timestamp}</p>
             </div>
           </div>
-        ))}
+        ))} */}
       </div>
       <div className="p-4 border-t box5">
         <div className="flex items-center space-x-4">

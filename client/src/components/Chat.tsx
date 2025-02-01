@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import assets from "../assets/assets";
 import {
   IoChatbubbleEllipsesOutline,
@@ -10,14 +10,19 @@ import Chat_Navigation_Sidebar from "./Navigation_Sidebar";
 import Chat_Contacts from "./Chat_Contact";
 import Chat_Selected from "./Chat_Selected";
 import Chat_Search from "./Chat_Search";
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
 
 interface Contact {
-  id: number;
-  name: string;
-  avatar: string;
-  lastMessage: string;
-  online: boolean;
+  _id: string;
+  firstName: string;
+  lastName: string;
+  profilePic: string;
+  onlineStatus: boolean;
+  lastMessage?: string;
 }
+
 
 interface Message {
   id: number;
@@ -30,29 +35,7 @@ interface Messages {
   [key: number]: Message[];
 }
 
-const contacts: Contact[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    lastMessage: "Hey there!",
-    avatar: assets.avatar_icon.src,
-    online: true,
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    lastMessage: "How are you?",
-    avatar: assets.avatar_icon.src,
-    online: false,
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    lastMessage: "See you later",
-    avatar: assets.avatar_icon.src,
-    online: true,
-  },
-];
+
 
 const messages: Messages = {
   1: [
@@ -70,14 +53,43 @@ const messages: Messages = {
 };
 
 const Chat = () => {
+  const { user, getContacts, getUser , contacts } = useAuth();
+  // const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedChat, setSelectedChat] = useState<Contact | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const router = useRouter();
+   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(()=>{
+    console.log(user)
+    const token = localStorage.getItem('token');
+    if(token){
+      setIsAuthenticated(true);
+    }
+    else{
+      router.push('/login');
+    }
+    // const fetchContacts = async () => {
+    //   try {
+    //     if (user?._id) {
+    //       const fetchedContacts = await getContacts(user._id);
+    //       console.log(fetchedContacts)
+    //     }
+    //   } catch (error) {
+    //     console.error('Failed to fetch contacts:', error);
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
+    // };
+
+    // fetchContacts();
+  }, [user]);
+
+  
 
   const handleChatSelect = (contact: Contact) => {
-    if (selectedChat?.id === contact.id) {
-      setSelectedChat(null);
-    } else {
-      setSelectedChat(contact);
-    }
+    setSelectedChat(selectedChat?._id === contact._id ? null : contact);
   };
 
   const chatAssets = {
@@ -87,7 +99,9 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex h-screen">
+    <>
+      {isAuthenticated ? <>
+        <div className="flex h-screen">
       {/* Navigation Sidebar */}
       <Chat_Navigation_Sidebar />
 
@@ -97,7 +111,7 @@ const Chat = () => {
         <div className="overflow-y-auto h-[calc(100vh-80px)]">
           {contacts.map((contact: Contact) => (
             <Chat_Contacts
-              key={contact.id}
+              key={contact._id}
               contact={contact}
               selectedChat={selectedChat}
               setSelectedChat={handleChatSelect}
@@ -121,6 +135,9 @@ const Chat = () => {
         )}
       </div>
     </div>
+      </>:null}
+    </>
+    
   );
 };
 

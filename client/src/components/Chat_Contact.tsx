@@ -1,14 +1,15 @@
 'use client'
 import React from 'react'
-import assets from '../assets/assets'
 import Image from 'next/image'
+import assets from '../assets/assets'
 
 interface Contact {
-  id: number;
-  name: string;
-  lastMessage: string;
-  avatar: string;
-  online: boolean;
+  _id: string;
+  firstName: string;
+  lastName: string;
+  profilePic: string;
+  onlineStatus: boolean;
+  lastMessage?: string;
 }
 
 interface ChatContactsProps {
@@ -18,36 +19,45 @@ interface ChatContactsProps {
 }
 
 const Chat_Contacts = ({ contact, selectedChat, setSelectedChat }: ChatContactsProps) => {
+  const fullName = `${contact.firstName} ${contact.lastName}`;
+  
   return (
     <div
       onClick={() => setSelectedChat(contact)}
-      
       className={`flex box3 relative items-center transition-all m-2 p-4 rounded-xl cursor-pointer ${
-        selectedChat?.id === contact.id ? "box2" : ""
+        selectedChat?._id === contact._id ? "box2" : ""
       }`}
     >
-      {selectedChat?.id === contact.id ? <p className="bg-green-400 absolute h-6 w-[2.8px] left-[5px] top-7"></p> :" " } 
+      {selectedChat?._id === contact._id && (
+        <div className="bg-green-400 absolute h-6 w-[2.8px] left-[5px] top-7" />
+      )}
+      
       <div className="relative">
-        <img
-          src={contact.avatar}
-          alt={contact.name}
-          className="w-12 h-12 rounded-full"
+        <Image
+          src={contact.profilePic || assets.profile_img}
+          alt={fullName}
+          width={48}
+          height={48}
+          className="rounded-full object-cover"
         />
-        {contact.online && (
+        {contact.onlineStatus && (
           <div className="absolute bottom-0 right-0">
             <Image
               src={assets.green_dot}
-              alt="online" 
-              className="w-3 h-3"
+              alt="online"
               width={12}
               height={12}
+              className="w-3 h-3"
             />
           </div>
         )}
       </div>
+
       <div className="ml-4 flex-1">
-        <h3 className={`font-semibold ${selectedChat && ""}`}>{contact.name}</h3>
-        <p className="text-sm ">{contact.lastMessage}</p>
+        <h3 className="font-semibold text-sm">{fullName}</h3>
+        <p className="text-sm text-gray-500 truncate">
+          {contact.lastMessage || 'Start a conversation'}
+        </p>
       </div>
     </div>
   )

@@ -1,170 +1,215 @@
 import React, { useState, useRef, useEffect } from "react";
-import assets from "../assets/assets";
-import Image from "next/image";
-import '../app/globals.css';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import assets from "../assets/assets";
+import toast from 'react-hot-toast';
+
+interface UpdateUserData {
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  profilePic?: string;
+}
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  profilePic: string | null;
+}
 
 const ProfileUpdatePopup = () => {
+  const { user, logout, updateProfile } = useAuth();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [number, setNumber] = useState("");
   const popupRef = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    phoneNumber: user?.phoneNumber || "",
+    profilePic: user?.profilePic || null
+  });
 
-  const togglePopup = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
-      setProfileImage(null);
-    }
-  };
-
-  const logoutHandle = () => {
-    // Clear user session or token if applicable
-    console.log("User logged out");
-    // Optionally, redirect to login page or update state
-    setIsOpen(false);
-    router.push("/login");
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result as string);
+        setFormData(prev => ({
+          ...prev,
+          profilePic: reader.result as string
+        }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    // Handle form submission logic here
-    console.log("Profile updated:", { name, email, profileImage });
-    setIsOpen(false);
+  const validateForm = (): boolean => {
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      toast.error('Name fields are required');
+      return false;
+    }
+
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)) {
+      toast.error('Invalid phone number format');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+
+    // if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const updateData: UpdateUserData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phoneNumber: formData.phoneNumber,
+        profilePic: formData.profilePic || undefined
+      };
+
+      await updateProfile(updateData);
+      toast.success('Profile updated successfully');
+      setIsOpen(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to update profile';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (error) {
+      toast.error('Logout failed');
+    }
   };
 
   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   return (
-    <div className="cursor-default">
-      <button onClick={togglePopup} className="navbar-icon">
+    <div className="relative">
+      <button onClick={() => setIsOpen(true)} className="navbar-icon">
         <Image
-          src={assets.profile_img}
-          alt="Profile Update"
+          src={user?.profilePic || assets.profile_img}
+          alt="Profile"
           width={40}
           height={40}
-          className="rounded-full"
+          className="rounded-full object-cover"
         />
       </button>
+
       {isOpen && (
-        <div
-          ref={popupRef}
-          className="popup p-3 drop-shadow-xl flex absolute top-[25%] z-10 rounded-lg left-20 w-[30rem] h-[28rem]"
-        >
-        
-        <div className="w-1/3 relative p-3">
-          <div className="relative box1 px-2 rounded-lg">
-            <p className="bg-green-400 absolute h-3 w-[2.8px] left-[2px] top-2"></p>
-            <h2 className=" text-lg font-medium">Profile</h2>
-          </div>
-          <div>
-          <button 
-            onClick={() => {logoutHandle()
-            }} 
-            className="mt-4 p-2 bg-red-500 absolute bottom-5 text-white rounded-lg"
-          >
-            Logout
-          </button>
-          </div>
-          </div>
-          <form
-            className="w-2/3 h-full relative flex flex-col space-x-5 space-y-6 p-3 rounded-lg"
-            onSubmit={handleSubmit}
-          >
-            <div className="">
-              <label className=" relative">
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt="Profile"
-                    width={140}
-                    height={140}
-                    className="profile-image-preview cursor-pointer rounded-full"
-                  />
-                ) : (
-                  <Image
-                    src={assets.profile_img}
-                    alt="Profile Update"
-                    width={140}
-                    height={140}
-                    className="rounded-full cursor-pointer"
-                  />
-                )}
+        <div ref={popupRef} className="popup fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl z-50 w-[30rem]">
+          <h2 className="text-xl font-semibold mb-4">Update Profile</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex justify-center mb-6">
+              <label className="relative cursor-pointer">
+                <Image
+                  src={formData.profilePic || assets.profile_img}
+                  alt="Profile"
+                  width={120}
+                  height={120}
+                  className="rounded-full object-cover"
+                />
                 <input
-                  className="absolute top-0 left-0 opacity-0 w-full h-full"
                   type="file"
+                  className="hidden"
                   accept="image/*"
                   onChange={handleImageChange}
                 />
               </label>
             </div>
-            <div className="">
-              <div className="mb-4">
-                <label>
-                  <input
-                    type="text"
-                    value={name}
-                    placeholder="Name"
-                    className="w-full p-2 bg-transparent rounded-lg"
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </label>
-              </div>
-              <div className="mb-4">
-                <label>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    className="w-full p-2 bg-transparent rounded-lg"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </label>
-              </div>
-              <div className="mb-4">
-                <label>
-                  <input
-                    type="number"
-                    placeholder="Phone Number"
-                    className="w-full p-2 bg-transparent rounded-lg"
-                    value={number}
-                    onChange={(e) => setNumber(e.target.value)}
-                  />
-                </label>
-              </div>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="First Name"
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Last Name"
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Email"
+                className="w-full p-2 border rounded"
+                disabled
+              />
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="Phone Number"
+                className="w-full p-2 border rounded"
+              />
             </div>
-            <button
-              className="bg-blue-200 absolute bottom-4 right-4 px-5 rounded-2xl py-3"
-              type="submit"
-            >
-              Save
-            </button>
+
+            <div className="flex justify-between mt-6">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Logout
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isLoading ? 'Updating...' : 'Update Profile'}
+              </button>
+            </div>
           </form>
         </div>
       )}
