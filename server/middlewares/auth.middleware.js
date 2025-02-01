@@ -3,11 +3,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const authMiddleware = (req, res, next) => {
-    //const token = req.header('Authorization').replace('Bearer ', '');
-    const token = req.cookies.authToken;
+    let token = req.cookies.authToken;
+     
+    // Check Authorization header if cookie is not present
+    const authHeader = req.headers.authorization;
+    if (!token && authHeader) {
+        token = authHeader.replace('Bearer ', '');
+    }
 
     if (!token) {
-        return res.status(401).send({ error: 'Access denied. No token provided.' });
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
     try {
@@ -15,7 +20,7 @@ const authMiddleware = (req, res, next) => {
         req.user = decoded;
         next();
     } catch (ex) {
-        res.status(400).send({ error: 'Invalid token.' });
+        res.status(401).json({ error: 'Invalid token.' });
     }
 };
 

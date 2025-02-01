@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
-
+import plm from 'passport-local-mongoose'
 const userSchema = new mongoose.Schema(
   {
+    username: { type: String },
     email: {
       type: String,
       required: true,
@@ -9,7 +10,18 @@ const userSchema = new mongoose.Schema(
     },
     fullName: {
       type: String,
+    },
+    firstName: {
+      type: String,
       required: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+    },
+    phoneNumber: {
+      type: String,
+      default: "",
     },
     password: {
       type: String,
@@ -35,6 +47,16 @@ const userSchema = new mongoose.Schema(
    },
    { timestamps: true }
 );
+
+userSchema.methods.serializeUser = function () {
+  return this.id; // or any unique identifier
+};
+
+userSchema.methods.deserializeUser = function (id, callback) {
+  this.findById(id, callback);
+};
+
+userSchema.plugin(plm);
 
 const User = mongoose.model("User", userSchema);
 

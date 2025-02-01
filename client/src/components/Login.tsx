@@ -4,6 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import bg1 from "../../public/icon1.jpg";
+import { useAuth } from "@/context/AuthContext";
+
+
+interface FormData {
+  email: string;
+  password: string;
+  agreeToTerms: boolean;
+}
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +19,7 @@ const Login = () => {
     password: "",
     agreeToTerms: false,
   });
-
+  const { login } = useAuth();
   const router = useRouter();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -21,15 +29,21 @@ const Login = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.agreeToTerms) {
       alert("Please agree to the terms and conditions");
       return;
     }
-    // Handle login logic here
     console.log(formData);
-    router.push("/chat");
+    // Handle login logic here
+    try {
+      await login(formData.email, formData.password);
+      router.push('/chat');
+    } catch (error: any) {
+      alert(error.response?.data?.message);
+    }
+
   };
 
   return (

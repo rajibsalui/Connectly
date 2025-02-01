@@ -2,36 +2,63 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import bg1 from "../../public/icon1.jpg"; // Fixed path to match project structure
+import bg1 from "../../public/icon1.jpg";
 import { useRouter } from "next/navigation";
+import { useAuth } from '@/context/AuthContext';
+import toast, { Toaster } from 'react-hot-toast';
+
+interface RegisterFormData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  agreeToTerms: boolean;
+}
 
 const Register = () => {
-  const [formData, setFormData] = useState({
+  const { register } = useAuth();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<RegisterFormData>({
     email: "",
     password: "",
-    username: "",
+    firstName: "",
+    lastName: "",
     agreeToTerms: false,
   });
 
-  const router = useRouter();
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.agreeToTerms) {
-      alert("Please agree to the terms and conditions");
+      toast.error("Please agree to the terms and conditions");
+      <Toaster/>
       return;
     }
-    // Handle signup logic here
-    console.log(formData);
-    router.push("/chat")
+
+    setIsLoading(true);
+    try {
+      await register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName
+      });
+      toast.success('Registration successful!');
+      <Toaster/>
+      router.push('/chat');
+    } catch (error: any) {
+      toast.error(error.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -53,27 +80,31 @@ const Register = () => {
           </p>
         </div>
         <div className="w-full md:w-1/2 flex justify-center items-center">
-          <form
-            onSubmit={handleSubmit}
-            className="backdrop-blur-md bg-white/10 p-8 rounded-xl shadow-2xl w-full max-w-md"
-          >
-            <h2 className="text-3xl font-bold mb-8 text-white text-center">
-              Sign Up
-            </h2>
+          <form onSubmit={handleSubmit} className="backdrop-blur-md bg-white/10 p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <h2 className="text-3xl font-bold mb-8 text-white text-center">Sign Up</h2>
             <div className="space-y-6">
               <div>
-                <label
-                  className="block text-gray-200 text-sm font-semibold mb-2"
-                  htmlFor="username"
-                >
-                  Username
+                <label className="block text-gray-200 text-sm font-semibold mb-2">
+                  First Name
                 </label>
                 <input
                   className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-300 focus:border-blue-500 focus:bg-white focus:outline-none"
-                  name="username"
+                  name="firstName"
                   type="text"
-                  placeholder="Enter your username"
-                  value={formData.username}
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-200 text-sm font-semibold mb-2">
+                  Last Name
+                </label>
+                <input
+                  className="w-full px-4 py-3 rounded-lg bg-gray-100 border border-gray-300 focus:border-blue-500 focus:bg-white focus:outline-none"
+                  name="lastName"
+                  type="text"
+                  value={formData.lastName}
                   onChange={handleChange}
                   required
                 />
@@ -127,9 +158,10 @@ const Register = () => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 ease-in-out transform hover:scale-[1.02]"
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 ease-in-out transform hover:scale-[1.02] disabled:opacity-50"
               >
-                Sign Up
+                {isLoading ? 'Signing up...' : 'Sign Up'}
               </button>
               <p className="text-center text-gray-200 text-sm">
                 Already have an account?{" "}
