@@ -230,6 +230,7 @@ export const addContact = async (req, res) => {
   }
 };
 
+//get contacts 
 export const getContacts = async (req, res) => {
   try {
     // console.log("req.user:", req.user); 
