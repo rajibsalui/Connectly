@@ -6,6 +6,7 @@ import bg1 from "../../public/icon1.jpg";
 import { useRouter } from "next/navigation";
 import { useAuth } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
+import { handleGoogleLogin } from "@/app/(auth)/firebaseauthService";
 
 interface RegisterFormData {
   email: string;
@@ -163,6 +164,13 @@ const Register = () => {
               >
                 {isLoading ? 'Signing up...' : 'Sign Up'}
               </button>
+              <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="mt-4 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+          >
+            Sign Up with Google
+          </button>
               <p className="text-center text-gray-200 text-sm">
                 Already have an account?{" "}
                 <Link

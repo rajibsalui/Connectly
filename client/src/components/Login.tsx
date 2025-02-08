@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import bg1 from "../../public/icon1.jpg";
 import { useAuth } from "@/context/AuthContext";
+import { handleGoogleLogin } from "../app/(auth)/firebaseauthService";
 
 
 interface FormData {
@@ -136,6 +137,13 @@ const Login = () => {
               >
                 Sign In
               </button>
+              <button
+                   type="button"
+                   onClick={handleGoogleLogin}
+                   className="mt-4 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+                >
+                   Login using Google
+                </button>
               <p className="text-center text-gray-200 text-sm">
                 Don't have an account?{" "}
                 <Link
