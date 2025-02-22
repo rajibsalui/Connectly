@@ -9,13 +9,10 @@ router.post("/register", register);
 router.post("/login", login);
 
 // Protected routes
-router.get("/all", authMiddleware, getAllUsers); // Changed route path to avoid conflict
+router.get("/all", authMiddleware, getAllUsers);
+router.get("/contacts", authMiddleware, getContacts); // Changed this route
 router.get("/:id", authMiddleware, getUser);
 router.put("/update", authMiddleware, updateUser);
-
-// Contact routes
 router.post("/contacts/add", authMiddleware, addContact);
-router.get("/:id/contacts", authMiddleware, getContacts);
 
-
-export default router; 
+export default router;

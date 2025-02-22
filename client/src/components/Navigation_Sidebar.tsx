@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import assets from '../assets/assets'
 import {
   IoChatbubbleEllipsesOutline,
@@ -8,19 +8,31 @@ import {
 } from "react-icons/io5";
 import { MdAddIcCall } from "react-icons/md";
 import { LuMenu } from 'react-icons/lu';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ProfileUpdatePopup from './ProfileUpdatePopup'
 import SettingsPage from './Setting_page';
 import { TbCircleDashed } from 'react-icons/tb';
+import { useAuth } from '@/context/AuthContext';
 
 const Navigation_Sidebar = () => {
   const router = useRouter();
+  const id = useParams()
+  const { user, logout, updateProfile ,getUser} = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [chatId, setChatId] = useState('');
 
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
   };
+
+  useEffect(() => {
+    // const currentChatId = typeof id.chat_id === 'string' ? id.chat_id : '';
+    // setChatId(currentChatId);
+    // // console.log(chatId);
+    // getUser(chatId);
+
+  })
 
   return (
     <div className={`${isExpanded ? 'w-60' : 'w-16'} transition-width duration-300 border-r box5 flex flex-col items-center py-6`}>
@@ -31,7 +43,7 @@ const Navigation_Sidebar = () => {
             {isExpanded && <span className="ml-3 font-semibold ">Menu</span>}
           </div>
         </div>
-        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push("/chat")}>
+        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push(`/chat/${chatId}`)}>
           <div className="flex items-center">
             <IoChatbubbleEllipsesOutline className="text-3xl" />
             {isExpanded && <span className="ml-3 font-semibold ">Chat</span>}

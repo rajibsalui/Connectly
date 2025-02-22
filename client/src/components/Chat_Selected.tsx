@@ -6,10 +6,10 @@ import { IoCallOutline, IoVideocamOutline } from "react-icons/io5";
 
 interface Contact {
   _id: string;
-  firstName: string;
-  lastName: string;
-  profilePic: string;
-  onlineStatus: boolean;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  onlineStatus?: boolean;
   lastMessage?: string;
 }
 
@@ -61,11 +61,11 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
         <div className="flex items-center justify-between space-x-4">
           <div className="flex items-center space-x-4">
             <img
-              src={selectedChat.profilePic}
-              alt={`${selectedChat.firstName} ${selectedChat.lastName}`}
+              src={selectedChat.photoURL}
+              alt={`${selectedChat.displayName}`}
               className="w-10 h-10 rounded-full"
             />
-            <h2 className="font-semibold ">{`${selectedChat.firstName} ${selectedChat.lastName}`}</h2>
+            <h2 className="font-semibold ">{`${selectedChat.displayName}`}</h2>
           </div>
           <div className="flex space-x-10 px-6">
             <IoCallOutline onClick={openCallWindow} className="w-6 h-6 cursor-pointer hover:scale-110 transition-all" title="Voice Call" />

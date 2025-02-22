@@ -32,8 +32,6 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-// app.set('views', path.join(__dirname, 'views'));
-// app.set('view engine', 'ejs');
 
 app.use(expresssession({
    secret: process.env.JWT_SECRET || "secret-key",
@@ -90,13 +88,22 @@ app.use(function(req, res, next) {
    next(createError(404));
  });
  
- // error handler
- app.use(function(err, req, res, next) {
-   // set locals, only providing error in development
-   res.locals.message = err.message;
-   res.locals.error = req.app.get('env') === 'development' ? err : {};
- 
-   // render the error page
-   res.status(err.status || 500);
-   res.render('error');
- });
+// Error handler
+app.use(function(err, req, res, next) {
+  // Handle API errors with JSON response
+  if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+    return res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+
+  // Set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // Render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});

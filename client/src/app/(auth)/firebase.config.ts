@@ -11,12 +11,12 @@ import {getAuth,GoogleAuthProvider,signInWithPopup} from 'firebase/auth';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 export const firebaseConfig = {
-  apiKey: "AIzaSyDHdQDDW5x08Q-1qSSvD7rdxtXVxEk12Po",
-  authDomain: "express-backend-a461b.firebaseapp.com",
-  projectId: "express-backend-a461b",
-  storageBucket: "express-backend-a461b.firebasestorage.app",
-  messagingSenderId: "656684837712",
-  appId: "1:656684837712:web:a611d006d05123a6fcda55",
-  measurementId: "G-03L2HRQ0R0"
+  apiKey: "AIzaSyBLWFUbj_xjkctzZ3qm0uTSfmqfzPJdBVE",
+  authDomain: "connectly-e0f52.firebaseapp.com",
+  projectId: "connectly-e0f52",
+  storageBucket: "connectly-e0f52.firebasestorage.app",
+  messagingSenderId: "408515393877",
+  appId: "1:408515393877:web:a0aadaa1213e187fc9d7dc",
+  measurementId: "G-68PHSTECQB"
 };
 

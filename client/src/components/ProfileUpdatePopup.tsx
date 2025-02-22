@@ -1,38 +1,48 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import assets from "../assets/assets";
 import toast from 'react-hot-toast';
 
 interface UpdateUserData {
-  firstName: string;
-  lastName: string;
+  displayName: string;
   phoneNumber?: string;
   profilePic?: string;
 }
 
 interface FormData {
-  firstName: string;
-  lastName: string;
+  displayName: string;
   email: string;
   phoneNumber: string;
   profilePic: string | null;
 }
 
 const ProfileUpdatePopup = () => {
-  const { user, logout, updateProfile } = useAuth();
+  const id = useParams();
+  const { user, logout, updateProfile, getUser } = useAuth();
   const router = useRouter();
   const popupRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
-    phoneNumber: user?.phoneNumber || "",
-    profilePic: user?.profilePic || null
+    displayName: "",
+    email: "",
+    phoneNumber: "",
+    profilePic: null
   });
+
+  // Update formData when user data is available
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        displayName: user.displayName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+        profilePic: user.profilePic || null
+      });
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -61,7 +71,7 @@ const ProfileUpdatePopup = () => {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+    if (!formData.displayName.trim()) {
       toast.error('Name fields are required');
       return false;
     }
@@ -83,8 +93,7 @@ const ProfileUpdatePopup = () => {
     setIsLoading(true);
     try {
       const updateData: UpdateUserData = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        displayName: formData.displayName.trim(),
         phoneNumber: formData.phoneNumber,
         profilePic: formData.profilePic || undefined
       };
@@ -102,16 +111,22 @@ const ProfileUpdatePopup = () => {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout =  () => {
     try {
-      await logout();
+      logout();
       router.push('/');
     } catch (error) {
       toast.error('Logout failed');
     }
   };
+  // console.log(id)
 
   useEffect(() => {
+    const chatId = typeof id.chat_id === 'string' ? id.chat_id : '';
+    // if (chatId) {
+    //   getUser(chatId);
+    // }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -122,13 +137,13 @@ const ProfileUpdatePopup = () => {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+  }, [isOpen, id.chat_id]);
 
   return (
     <div className="relative">
       <button onClick={() => setIsOpen(true)} className="navbar-icon">
         <Image
-          src={user?.profilePic || assets.profile_img}
+          src={formData.profilePic || assets.profile_img.src}
           alt="Profile"
           width={40}
           height={40}
@@ -143,7 +158,7 @@ const ProfileUpdatePopup = () => {
             <div className="flex justify-center mb-6">
               <label className="relative cursor-pointer">
                 <Image
-                  src={formData.profilePic || assets.profile_img}
+                  src={formData.profilePic || assets.profile_img.src}
                   alt="Profile"
                   width={120}
                   height={120}
@@ -161,18 +176,10 @@ const ProfileUpdatePopup = () => {
             <div className="space-y-3">
               <input
                 type="text"
-                name="firstName"
-                value={formData.firstName}
+                name="displayName"
+                value={formData.displayName}
                 onChange={handleChange}
-                placeholder="First Name"
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                placeholder="Last Name"
+                placeholder="Display Name"
                 className="w-full p-2 border rounded"
               />
               <input

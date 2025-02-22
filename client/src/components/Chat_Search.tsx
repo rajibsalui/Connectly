@@ -1,8 +1,11 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import assets from '../assets/assets'
+import AddContactPopup from './Add_Contact'
 
 const Chat_Search = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className="p-4 border-b box5">
       <div className="flex items-center space-x-4">
@@ -19,6 +22,14 @@ const Chat_Search = () => {
           />
         </div>
       </div>
+    {/* <button onClick={<Add_con} className="p-2 rounded-full bg-blue-500 hover:bg-blue-600 transition duration-200">
+      <img src={assets.pic3.src} alt="Add Contact" className="w-6 h-6" />
+    </button> */}
+    <button onClick={() => setIsOpen(true)}>
+      click me
+    </button>
+    <AddContactPopup isOpen={isOpen} onClose={() => setIsOpen(false)}/>
+    
     </div>
   )
 }
