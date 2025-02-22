@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import bg1 from "../../public/icon1.jpg";
 import { useAuth } from "@/context/AuthContext";
 import { handleGoogleLogin } from "../app/(auth)/firebaseauthService";
-
 
 interface FormData {
   email: string;
@@ -40,11 +39,10 @@ const Login = () => {
     // Handle login logic here
     try {
       await login(formData.email, formData.password);
-      router.push('/chat');
+      router.push("/chat");
     } catch (error: any) {
       alert(error.response?.data?.message);
     }
-
   };
 
   return (
@@ -62,7 +60,8 @@ const Login = () => {
             Welcome Back!
           </h1>
           <p className="text-gray-200 text-sm mt-4 text-center max-w-md">
-            Enter your credentials to access your account and explore our platform.
+            Enter your credentials to access your account and explore our
+            platform.
           </p>
         </div>
         <div className="w-full md:w-1/2 flex justify-center items-center">
@@ -138,12 +137,17 @@ const Login = () => {
                 Sign In
               </button>
               <button
-                   type="button"
-                   onClick={handleGoogleLogin}
-                   className="mt-4 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-                >
-                   Login using Google
-                </button>
+                type="button"
+                onClick={async () => {
+                  const val = await handleGoogleLogin();
+                  // console.log(val && val.user)
+                  if (val && val.true) router.push(`/chat/${val.user}`);
+                  else router.push("/");
+                }}
+                className="mt-4 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+              >
+                Login using Google
+              </button>
               <p className="text-center text-gray-200 text-sm">
                 Don't have an account?{" "}
                 <Link

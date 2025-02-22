@@ -5,10 +5,10 @@ import assets from '../assets/assets'
 
 interface Contact {
   _id: string;
-  firstName: string;
-  lastName: string;
-  profilePic: string;
-  onlineStatus: boolean;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  onlineStatus?: boolean;
   lastMessage?: string;
 }
 
@@ -19,7 +19,8 @@ interface ChatContactsProps {
 }
 
 const Chat_Contacts = ({ contact, selectedChat, setSelectedChat }: ChatContactsProps) => {
-  const fullName = `${contact.firstName} ${contact.lastName}`;
+  const fullName = `${contact.displayName}`;
+  
   
   return (
     <div
@@ -34,7 +35,7 @@ const Chat_Contacts = ({ contact, selectedChat, setSelectedChat }: ChatContactsP
       
       <div className="relative">
         <Image
-          src={contact.profilePic || assets.profile_img}
+          src={contact.photoURL || assets.profile_img}
           alt={fullName}
           width={48}
           height={48}

@@ -16,10 +16,10 @@ import { useAuth } from '@/context/AuthContext';
 
 interface Contact {
   _id: string;
-  firstName: string;
-  lastName: string;
-  profilePic: string;
-  onlineStatus: boolean;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  onlineStatus?: boolean;
   lastMessage?: string;
 }
 
@@ -61,8 +61,11 @@ const Chat = () => {
   const router = useRouter();
    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+
   useEffect(()=>{
-    console.log(user)
+    
+   const chatId = user?._id || '';
+   getContacts(chatId);
     const token = localStorage.getItem('token');
     if(token){
       setIsAuthenticated(true);

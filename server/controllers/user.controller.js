@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import generateUniqueId from "generate-unique-id";
 import passport from "passport";
 import LocalStrategy from "passport-local";
+import mongoose from 'mongoose';
 
 // Configure passport
 passport.use(new LocalStrategy(
@@ -71,53 +72,55 @@ export const register = async (req, res) => {
   }
 };
 
-// Login a user
+// Login or create user
 export const login = async (req, res) => {
-  passport.authenticate('local', (err, user, info) => {
-    if (err) {
-      return res.status(500).json({ 
-        success: false,
-        message: "Server error occurred.",
-        error: err.message 
-      });
-    }
+  try {
+    const { uid, email, displayName, photoURL } = req.body;
 
+    // Find user by Firebase UID or create new user
+    let user = await User.findOne({ uid });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(displayName, salt);
+    
     if (!user) {
-      return res.status(400).json({ 
-        success: false,
-        message: info.message || "Invalid credentials" 
+      // Create new user if doesn't exist
+      user = new User({
+        uid,
+        email,
+        displayName,
+        photoURL,
+        password: hashedPassword
       });
     }
 
-    const token = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
 
-    // Set HTTP-only cookie
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
     });
 
-    // Send response
     res.status(200).json({
       success: true,
       message: "Login successful",
+      token, // Include the token in the response
+      _id: user._id, // Pass the ObjectId here
       user: {
-        id: user._id,
+        uid: user.uid,
         email: user.email,
-        username: user.username,
-        fullName: user.fullName,
-        profilePic: user.profilePic,
-        onlineStatus: user.onlineStatus
-      },
-      token
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      }  
     });
-  })(req, res);
+  } catch (error) {
+    console.error("Error in login:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error" 
+    });
+  }
 };
 
 // Get user details
@@ -134,55 +137,77 @@ export const getUser = async (req, res) => {
   }
 };
 
-// Get all users with pagination
+// Get all users with pagination and search
 export const getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const currentUserId = req.user.id; // Get current user's ID
+
+    let query = {
+      _id: { $ne: currentUserId } // Exclude current user
+    };
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { displayName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } }
+      ];
+    }
+
     const skip = (page - 1) * limit;
 
-    const users = await User.find()
-      .select("-password")
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
-
-    const total = await User.countDocuments();
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select("-password -contacts -uid")
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }),
+      User.countDocuments(query)
+    ]);
 
     res.status(200).json({
+      success: true,
       users,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
-      totalUsers: total
+      totalUsers: total,
+      hasMore: page * limit < total
     });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch users",
+      error: error.message 
+    });
   }
 };
-
 
 // Update user details
 export const updateUser = async (req, res) => {
   try {
-    const { firstName, lastName, phoneNumber, profilePic } = req.body;
+    const { displayName, phoneNumber, profilePic } = req.body;
     const userId = req.user.id;
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
-        firstName: firstName || user.firstName,
-        lastName: lastName || user.lastName,
+        displayName: displayName || user.displayName,
         phoneNumber: phoneNumber || user.phoneNumber,
-        profilePic: profilePic || user.profilePic,
-        fullName: `${firstName || user.firstName} ${lastName || user.lastName}`
+        // profilePic: profilePic || user.profilePic,
+        // fullName: `${firstName || user.firstName} ${lastName || user.lastName}`
       },
-      { new: true }
+      { new: true, runValidators: true }
     ).select("-password");
 
     res.status(200).json({
@@ -192,7 +217,7 @@ export const updateUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in updateUser:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -233,28 +258,36 @@ export const addContact = async (req, res) => {
 //get contacts 
 export const getContacts = async (req, res) => {
   try {
-    // console.log("req.user:", req.user); 
-    // const userId = req.user.id;
-    // // const user = await User.findById(req.params.id).select("-password");
+    const userId = req.user.id;
 
-    // if (!mongoose.Types.ObjectId.isValid(userId)) {
-    //   return res.status(400).json({ message: "Invalid User ID" });
-    // }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid user ID format" 
+      });
+    }
 
-    const user = await User.findById(req.params.id)
+    const user = await User.findById(userId)
       .populate("contacts", "-password")
       .select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
     }
 
     res.status(200).json({
       success: true,
-      contacts: user.contacts,
+      contacts: user.contacts || []
     });
   } catch (error) {
     console.error("Error in getContacts:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch contacts",
+      error: error.message 
+    });
   }
 };

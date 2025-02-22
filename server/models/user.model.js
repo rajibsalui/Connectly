@@ -1,23 +1,22 @@
 import mongoose from "mongoose";
-import plm from 'passport-local-mongoose'
+import plm from "passport-local-mongoose";
 const userSchema = new mongoose.Schema(
   {
-    username: { type: String },
-    email: {
+    uid: {
       type: String,
       required: true,
       unique: true,
     },
-    fullName: {
+    username: {
       type: String,
+      default: function () {
+        return `user_${Date.now()}`;
+      },
     },
-    firstName: {
+    email: {
       type: String,
       required: true,
-    },
-    lastName: {
-      type: String,
-      required: true,
+      unique: true,
     },
     phoneNumber: {
       type: String,
@@ -27,6 +26,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
+    },
+    fullName: {
+      type: String,
+      required: false,
+      trim: true,
+      default: function () {
+        return `user_${Date.now()}`;
+      },
     },
     profilePic: {
       type: String,
@@ -40,12 +47,29 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    contacts: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    }],
-   },
-   { timestamps: true }
+    contacts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    displayName: {
+      type: String,
+      required: true,
+    },
+    photoURL: {
+      type: String,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
 );
 
 userSchema.methods.serializeUser = function () {

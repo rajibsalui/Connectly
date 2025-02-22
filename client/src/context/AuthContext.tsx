@@ -1,4 +1,5 @@
 'use client'
+import { useParams } from 'next/navigation';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
@@ -12,13 +13,18 @@ interface AuthContextType {
   addContact: (contactId: string) => Promise<void>;
   getContacts: (userId: string) => Promise<void>;
   isAuthenticated: boolean;
+  getAllUsers: (page?: number, limit?: number) => Promise<{
+    users: User[];
+    currentPage: number;
+    totalPages: number;
+    totalUsers: number;
+  }>;
 }
 
 interface User {
     id: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    displayName: string;
     phoneNumber?: string;
     profilePic?: string;
     fullName: string;
@@ -127,36 +133,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const getContacts = async (userId: string) => {
-    // try {
-    //   console.log(userId)
-    //   const token = localStorage.getItem('token');
-    //   if (!token) {
-    //     throw new Error('No authentication token found');
-    //   }
+  const id = useParams()
+  const chatId = typeof id.chat_id === 'string' ? id.chat_id : '';
+
+  const getContacts = async (userId: string ) => {
+    try {
+      // console.log(userId)
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
   
-    //   const response = await fetch(`http://localhost:5000/users/${userId}/contacts`, {
-    //     method: 'GET',
-    //     headers: {
-    //       'Authorization': `Bearer ${token}`,
-    //       'Content-Type': 'application/json'
-    //     },
-    //     credentials: 'include'
-    //   });
+      const response = await fetch(`http://localhost:5000/users/contacts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
   
-    //   if (!response.ok) {
-    //     const error = await response.json();
-    //     throw new Error(error.message || 'Failed to fetch contacts');
-    //   }
+      if (!response.ok) {
+        const error = await response.json();
+        // throw new Error(error.message || 'Failed to fetch contacts');
+      }
   
-    //   const data = await response.json();
-    //   setContacts(data.contacts || []);
-    //   return data.contacts;
-    // } catch (error: any) {
-    //   console.error('Error fetching contacts:', error);
-    //   setContacts([]);
-    //   throw new Error(error.message || 'Failed to fetch contacts');
-    // }
+      const data = await response.json();
+      setContacts(data.contacts || []);
+      return data.contacts;
+    } catch (error: any) {
+      console.error('Error fetching contacts:', error);
+      setContacts([]);
+      throw new Error(error.message || 'Failed to fetch contacts');
+    }
   };
   
   const getUser = async (userId: string) => {
@@ -189,12 +198,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Error fetching user:', error);
       setUser(null);
       setIsAuthenticated(false);
-      throw new Error(error.message || 'Failed to fetch user');
+      // throw new Error(error.message || 'Failed to fetch user');
+    }
+  };
+
+  const getAllUsers = async (page: number = 1, limit: number = 10) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(
+        `http://localhost:5000/users/all?page=${page}&limit=${limit}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch users');
+      }
+
+      const data = await response.json();
+      // console.log(data.users);
+      return {
+        users: data.users,
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        totalUsers: data.totalUsers
+      };
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      throw new Error(error.message || 'Failed to fetch users');
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, getUser, login, register, logout, isAuthenticated , contacts, updateProfile , addContact, getContacts}}>
+    <AuthContext.Provider value={{ user, getUser, login, register, logout, isAuthenticated , contacts, updateProfile , addContact, getContacts, getAllUsers}}>
       {children}
     </AuthContext.Provider>
   );

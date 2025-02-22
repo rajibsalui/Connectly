@@ -166,7 +166,12 @@ const Register = () => {
               </button>
               <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={async () => {
+              const val = await handleGoogleLogin();
+              // console.log(val && val.user)
+              if (val && val.true) router.push(`/chat/${val.user}`);
+              else router.push("/");
+            }}
             className="mt-4 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
           >
             Sign Up with Google
