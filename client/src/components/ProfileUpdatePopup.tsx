@@ -34,12 +34,13 @@ const ProfileUpdatePopup = () => {
 
   // Update formData when user data is available
   useEffect(() => {
+    // console.log(user)
     if (user) {
       setFormData({
         displayName: user.displayName || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
-        profilePic: user.profilePic || null
+        profilePic: user.photoURL || null
       });
     }
   }, [user]);
@@ -123,9 +124,9 @@ const ProfileUpdatePopup = () => {
 
   useEffect(() => {
     const chatId = typeof id.chat_id === 'string' ? id.chat_id : '';
-    // if (chatId) {
-    //   getUser(chatId);
-    // }
+    if (chatId) {
+      getUser(chatId);
+    }
 
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
@@ -135,6 +136,8 @@ const ProfileUpdatePopup = () => {
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+    // console.log(user)
+
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, id.chat_id]);
@@ -204,7 +207,11 @@ const ProfileUpdatePopup = () => {
             <div className="flex justify-between mt-6">
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={()=>{
+                  router.push("/")
+                  setIsOpen(false)
+                  handleLogout()
+                }}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
               >
                 Logout

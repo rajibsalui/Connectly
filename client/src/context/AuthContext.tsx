@@ -30,6 +30,26 @@ interface User {
     fullName: string;
   }
 
+interface Message {
+  _id: string;
+  content: string;
+  sender: string;
+  timestamp: Date;
+  read: boolean;
+  delivered: boolean;
+}
+
+interface Chat {
+  _id: string;
+  participants: User[];
+  messages: Message[];
+  lastMessage: {
+    content: string;
+    sender: string;
+    timestamp: Date;
+  };
+}
+
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
