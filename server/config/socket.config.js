@@ -35,7 +35,6 @@ export const configureSocket = (httpServer) => {
       users.set(userId, socket.id);
       socket.join(userId);
       socket.emit('connected');
-      console.log(`User ${userId} setup completed`);
     });
 
     socket.on('join chat', (room) => {
@@ -53,23 +52,17 @@ export const configureSocket = (httpServer) => {
 
     socket.on('new message', async (messageData) => {
       try {
-        console.log('Saving message:', messageData);
-        const savedMessage = await saveMessage(messageData.chatId, {
-          sender: messageData.sender,
-          content: messageData.content
-        });
-
-        // Emit to chat room (all participants)
+        // Message is already saved, just emit to other participants
         io.to(messageData.chatId).emit('message received', {
           chatId: messageData.chatId,
-          message: savedMessage
+          message: messageData
         });
 
-        console.log('Message saved and emitted:', savedMessage);
+        console.log('Message emitted:', messageData);
       } catch (error) {
-        console.error('Error handling new message:', error);
+        console.error('Error handling message:', error);
         socket.emit('message error', { 
-          error: 'Failed to save message',
+          error: 'Failed to process message',
           details: error.message 
         });
       }

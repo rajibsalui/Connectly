@@ -6,6 +6,11 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   content: {
     type: String,
     required: true
@@ -34,6 +39,7 @@ const chatSchema = new mongoose.Schema({
   lastMessage: {
     content: String,
     sender: mongoose.Schema.Types.ObjectId,
+    receiver: mongoose.Schema.Types.ObjectId,
     timestamp: {
       type: Date,
       default: Date.now

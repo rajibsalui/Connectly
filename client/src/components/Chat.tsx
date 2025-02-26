@@ -36,7 +36,7 @@ const Chat = () => {
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
-  const messagesEndRef = useRef() as React.RefObject<HTMLDivElement>;
+  const messagesEndRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
@@ -133,17 +133,24 @@ const Chat = () => {
   };
 
   const sendMessage = async (content: string) => {
-    if (!socket || !chatId || !content.trim() || !user?._id) return;
-
+    if (!socket || !chatId || !user?._id) return;
+    const tempMessage = {
+      _id: Date.now().toString(),
+      content,
+      sender: user._id,
+      timestamp: new Date(),
+      read: false,
+      delivered: false
+    };
     try {
-      const tempMessage = {
-        _id: Date.now().toString(),
-        content,
-        sender: user._id,
-        timestamp: new Date(),
-        read: false,
-        delivered: false
-      };
+      // const tempMessage = {
+      //   _id: Date.now().toString(),
+      //   content,
+      //   sender: user._id,
+      //   timestamp: new Date(),
+      //   read: false,
+      //   delivered: false
+      // };
 
       // Optimistically add message to UI
       setMessages(prev => [...prev, tempMessage]);
@@ -153,6 +160,11 @@ const Chat = () => {
         chatId,
         content,
         sender: user._id
+      }, (error: any) => {
+        if (error) {
+          console.error('Message error:', error);
+          setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
+        }
       });
 
       // Listen for server acknowledgment
@@ -166,17 +178,30 @@ const Chat = () => {
         }
       });
 
-      // Handle errors
-      socket.on('message error', (error) => {
-        console.error('Message error:', error);
-        setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-      });
-
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
       console.error('Error sending message:', error);
       // Remove failed message from UI
       setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
+    }
+  };
+
+  const handleSendMessage = async (message: Message) => {
+    if (!socket || !chatId || !user?._id) return;
+
+    try {
+      // Emit the saved message through socket
+      socket.emit('new message', {
+        chatId,
+        messageId: message._id,
+        content: message.content,
+        sender: user._id
+      });
+
+      setMessages(prev => [...prev, message]);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 

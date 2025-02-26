@@ -1,6 +1,7 @@
 'use client'
 import { useParams } from 'next/navigation';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { config } from '../config/config';
 
 interface AuthContextType {
   user: any;
@@ -19,6 +20,7 @@ interface AuthContextType {
     totalPages: number;
     totalUsers: number;
   }>;
+  saveMessage: (params: SaveMessageParams) => Promise<Message>;
 }
 
 interface User {
@@ -50,6 +52,13 @@ interface Chat {
   };
 }
 
+interface SaveMessageParams {
+  chatId: string;
+  content: string;
+  sender: string;
+  receiver: string;
+}
+
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -61,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:5000/users/login', {
+      const response = await fetch(`${config.serverUrl}/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -82,7 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (userData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/users/register', {
+      const response = await fetch(`${config.serverUrl}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -108,7 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   const updateProfile = async (userData: Partial<User>) => {
     try {
-      const response = await fetch('http://localhost:5000/users/update', {
+      const response = await fetch(`${config.serverUrl}/users/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const addContact = async (contactId: string) => {
     try {
-      const response = await fetch('http://localhost:5000/users/contacts/add', {
+      const response = await fetch(`${config.serverUrl}/users/contacts/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +173,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('No authentication token found');
       }
   
-      const response = await fetch(`http://localhost:5000/users/contacts`, {
+      const response = await fetch(`${config.serverUrl}/users/contacts`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,7 +204,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`http://localhost:5000/users/${userId}`, {
+      const response = await fetch(`${config.serverUrl}/users/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -230,7 +239,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const response = await fetch(
-        `http://localhost:5000/users/all?page=${page}&limit=${limit}`,
+        `${config.serverUrl}/users/all?page=${page}&limit=${limit}`,
         {
           method: 'GET',
           headers: {
@@ -260,8 +269,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+
+
+  const saveMessage = async ({ chatId, content, sender, receiver }: SaveMessageParams) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+  
+      // First check if chat exists
+      const chatResponse = await fetch(`${config.serverUrl}/chat/${chatId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      if (!chatResponse.ok) {
+        // If chat doesn't exist, create it
+        await fetch(`${config.serverUrl}/chat`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            participantId: sender
+          })
+        });
+      }
+  
+      // Now save the message
+      const response = await fetch(`${config.serverUrl}/chat/${chatId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          content,
+          sender ,
+          receiverId:receiver,
+        })
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save message');
+      }
+  
+      const savedMessage = await response.json();
+      return savedMessage;
+    } catch (error: any) {
+      console.error('Error saving message:', error);
+      throw new Error(error.message || 'Failed to save message');
+    }
+  };
+  
+
   return (
-    <AuthContext.Provider value={{ user, getUser, login, register, logout, isAuthenticated , contacts, updateProfile , addContact, getContacts, getAllUsers}}>
+    <AuthContext.Provider value={{ user, getUser, login, register, logout, isAuthenticated , contacts, updateProfile , addContact, getContacts, getAllUsers, saveMessage}}>
       {children}
     </AuthContext.Provider>
   );

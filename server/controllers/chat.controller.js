@@ -144,41 +144,101 @@ export const saveMessage = async (chatId, messageData) => {
       throw new Error('Invalid chat ID');
     }
 
-    const chat = await Chat.findById(chatId);
-    if (!chat) {
-      throw new Error('Chat not found');
+    if (!mongoose.Types.ObjectId.isValid(messageData.sender)) {
+      throw new Error('Invalid sender ID');
     }
 
+    if (!mongoose.Types.ObjectId.isValid(messageData.receiver)) {
+      throw new Error('Invalid receiver ID');
+    }
+
+    // Find or create chat using findOneAndUpdate
+    const chat = await Chat.findOneAndUpdate(
+      { _id: chatId },
+      {
+        $setOnInsert: {
+          participants: [messageData.sender, messageData.receiver],
+          messages: [],
+          lastMessage: {
+            content: '',
+            sender: messageData.sender,
+            receiver: messageData.receiver,
+            timestamp: new Date()
+          }
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true
+      }
+    );
+
+    // Add new message
     const newMessage = {
       sender: messageData.sender,
+      receiver: messageData.receiver,
       content: messageData.content,
       timestamp: new Date(),
       read: false,
       delivered: true
     };
 
-    chat.messages.push(newMessage);
-    chat.lastMessage = {
-      content: messageData.content,
-      sender: messageData.sender,
-      timestamp: new Date()
-    };
-
-    await chat.save();
-
-    const updatedChat = await Chat.findById(chatId)
-      .populate({
+    // Update chat with new message using atomic operation
+    const updatedChat = await Chat.findByIdAndUpdate(
+      chatId,
+      {
+        $push: { messages: newMessage },
+        $set: {
+          lastMessage: {
+            content: messageData.content,
+            sender: messageData.sender,
+            receiver: messageData.receiver,
+            timestamp: new Date()
+          }
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    ).populate([
+      {
         path: 'messages.sender',
         select: 'displayName email photoURL'
-      })
-      .populate({
+      },
+      {
+        path: 'messages.receiver',
+        select: 'displayName email photoURL'
+      },
+      {
         path: 'lastMessage.sender',
         select: 'displayName email photoURL'
-      });
+      },
+      {
+        path: 'lastMessage.receiver',
+        select: 'displayName email photoURL'
+      }
+    ]);
 
-    return updatedChat.messages[updatedChat.messages.length - 1];
+    if (!updatedChat) {
+      throw new Error('Failed to save message');
+    }
+
+    // Return the last message with full population
+    const savedMessage = updatedChat.messages[updatedChat.messages.length - 1];
+    console.log('Message saved successfully:', {
+      chatId: updatedChat._id,
+      messageId: savedMessage._id,
+      sender: savedMessage.sender.displayName,
+      receiver: savedMessage.receiver.displayName,
+      content: savedMessage.content
+    });
+    
+    return savedMessage;
+
   } catch (error) {
-    console.error('Error saving message:', error);
+    console.error('Error in saveMessage:', error);
     throw error;
   }
 };

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { FaPhoneAlt, FaVideo } from 'react-icons/fa'; // Importing React icons
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { IoCallOutline, IoVideocamOutline } from "react-icons/io5";
 
 interface Contact {
@@ -63,6 +64,7 @@ const Chat_Selected = ({
 }: ChatSelectedProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { saveMessage } = useAuth(); // Add this line
 
   const openCallWindow = () => {
     const callWindow = window.open(
@@ -94,7 +96,16 @@ const Chat_Selected = ({
 
     try {
       setIsSubmitting(true);
-      await onSendMessage(newMessage);
+      // Save the message using AuthContext
+      const savedMessage = await saveMessage({
+        chatId: selectedChat._id,
+        receiver:selectedChat._id,
+        content: newMessage.trim(),
+        sender: currentUserId
+      });
+
+      // Send through socket for real-time updates
+      await onSendMessage(savedMessage.content);
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
