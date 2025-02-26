@@ -1,7 +1,8 @@
 'use client'
-import React from "react";
+import React, { useState } from "react";
 import { FaPhoneAlt, FaVideo } from 'react-icons/fa'; // Importing React icons
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { IoCallOutline, IoVideocamOutline } from "react-icons/io5";
 
 interface Contact {
@@ -14,14 +15,12 @@ interface Contact {
 }
 
 interface Message {
-  id: number;
-  text: string;
-  sender: "me" | "them";
-  timestamp: string;
-}
-
-interface Messages {
-  [key: number]: Message[];
+  _id: string;
+  content: string;
+  sender: string;
+  timestamp: Date;
+  read: boolean;
+  delivered: boolean;
 }
 
 interface Assets {
@@ -32,12 +31,41 @@ interface Assets {
 
 interface ChatSelectedProps {
   selectedChat: Contact;
-  messages: Messages;
+  messages: Message[];
+  onSendMessage: (content: string) => void;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
   assets: Assets;
+  currentUserId: string;
 }
 
-const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) => {
-  const router = useRouter();
+const MessageStatus = ({ message, currentUserId }: { message: Message; currentUserId: string }) => {
+  if (message.sender !== currentUserId) return null;
+  
+  return (
+    <span className="ml-2 text-xs">
+      {message.read ? (
+        <span className="text-blue-500">✓✓</span>
+      ) : message.delivered ? (
+        <span className="text-gray-500">✓✓</span>
+      ) : (
+        <span className="text-gray-400">✓</span>
+      )}
+    </span>
+  );
+};
+
+const Chat_Selected = ({ 
+  selectedChat, 
+  messages, 
+  onSendMessage, 
+  messagesEndRef,
+  assets,
+  currentUserId 
+}: ChatSelectedProps) => {
+  const [newMessage, setNewMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { saveMessage } = useAuth(); // Add this line
+
   const openCallWindow = () => {
     const callWindow = window.open(
       "/voice_call",
@@ -53,6 +81,37 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
       "width=400,height=600,top=100,left=100"
     );
 
+  };
+
+  const formatTime = (date: Date) => {
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      // Save the message using AuthContext
+      const savedMessage = await saveMessage({
+        chatId: selectedChat._id,
+        receiver:selectedChat._id,
+        content: newMessage.trim(),
+        sender: currentUserId
+      });
+
+      // Send through socket for real-time updates
+      await onSendMessage(savedMessage.content);
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -74,33 +133,41 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
         </div>
       </div>
       <div
-        className="flex-1 box1 overflow-y-auto p-4"
+        className="flex-1 box1 overflow-y-auto p-4 space-y-4"
         style={{
           backgroundImage: `url(${assets.chat_bg})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        {/* {messages[selectedChat.id].map((message) => (
+        {messages.map((message) => (
           <div
-            key={message.id}
+            key={message._id}
             className={`flex ${
-              message.sender === "me" ? "justify-end" : "justify-start"
+              message.sender === currentUserId ? "justify-end" : "justify-start"
             } mb-4`}
           >
             <div
               className={`max-w-[70%] p-3 rounded-lg ${
-                message.sender === "me" ? "box2" : "box1"
+                message.sender === currentUserId 
+                  ? "bg-blue-500 text-white" 
+                  : "bg-white text-gray-800"
               }`}
             >
-              <p>{message.text}</p>
-              <p className="text-xs mt-1 opacity-70">{message.timestamp}</p>
+              <p className="text-sm">{message.content}</p>
+              <div className="flex items-center justify-end mt-1">
+                <p className="text-xs opacity-70">
+                  {formatTime(message.timestamp)}
+                </p>
+                <MessageStatus message={message} currentUserId={currentUserId} />
+              </div>
             </div>
           </div>
-        ))} */}
+        ))}
+        <div ref={messagesEndRef} />
       </div>
       <div className="p-4 border-t box5">
-        <div className="flex items-center space-x-4">
+        <form onSubmit={handleSubmit} className="flex items-center space-x-4">
           <img
             src={assets.gallery_icon}
             alt="Add"
@@ -110,13 +177,17 @@ const Chat_Selected = ({ selectedChat, messages, assets }: ChatSelectedProps) =>
             type="text"
             placeholder="Type a message..."
             className="flex-1 p-2 rounded-lg bg-transparent"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
           />
-          <img
-            src={assets.send_button}
-            alt="Send"
-            className="w-6 h-6 cursor-pointer"
-          />
-        </div>
+          <button type="submit">
+            <img
+              src={assets.send_button}
+              alt="Send"
+              className="w-6 h-6 cursor-pointer"
+            />
+          </button>
+        </form>
       </div>
     </>
   );

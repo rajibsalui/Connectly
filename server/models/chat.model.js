@@ -1,38 +1,59 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const messageSchema = new mongoose.Schema(
-  {
-    senderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    receiverId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    text: {
-      type: String,
-      required: true, // Making text required
-    },
-    image: {
-      type: String,
-      default: "", // Adding a default value for image
-    },
-    video: { // Adding a video field to support video messages
-      type: String,
-      default: "", // Adding a default value for video
-    },
-    status: { // Adding a status field to track message status
-      type: String,
-      enum: ["sent", "delivered", "read"], // Possible statuses
-      default: "sent", // Default status
-    },
+const messageSchema = new mongoose.Schema({
+  sender: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  { timestamps: true }
-);
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  content: {
+    type: String,
+    required: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  read: {
+    type: Boolean,
+    default: false
+  },
+  delivered: {
+    type: Boolean,
+    default: false
+  }
+});
 
-const Message = mongoose.model("Message", messageSchema);
+const chatSchema = new mongoose.Schema({
+  participants: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }],
+  messages: [messageSchema],
+  lastMessage: {
+    content: String,
+    sender: mongoose.Schema.Types.ObjectId,
+    receiver: mongoose.Schema.Types.ObjectId,
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
 
-export default Message;
+// Index for faster queries
+chatSchema.index({ participants: 1 });
+chatSchema.index({ 'messages.timestamp': -1 });
+chatSchema.index({ 'lastMessage.timestamp': -1 });
+
+export default mongoose.model('Chat', chatSchema);
