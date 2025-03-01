@@ -1,27 +1,35 @@
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-dotenv.config();
+import { verifyToken } from '../utils/jwt.utils.js';
+import User from '../models/user.model.js';
 
-const authMiddleware = (req, res, next) => {
-    let token = req.cookies.authToken;
-     
-    // Check Authorization header if cookie is not present
-    const authHeader = req.headers.authorization;
-    if (!token && authHeader) {
-        token = authHeader.replace('Bearer ', '');
-    }
+export const protect = async (req, res, next) => {
+  try {
+    const token = req.cookies.token;
 
     if (!token) {
-        return res.status(401).json({ error: 'Access denied. No token provided.' });
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized to access this route'
+      });
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (ex) {
-        res.status(401).json({ error: 'Invalid token.' });
+    // Verify token
+    const decoded = verifyToken(token);
+
+    // Get user from token
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
     }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Not authorized to access this route'
+    });
+  }
 };
-
-export default authMiddleware;

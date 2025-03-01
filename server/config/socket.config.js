@@ -1,88 +1,91 @@
-// server.js
-import express from 'express';
-import http from 'http';
 import { Server } from 'socket.io';
-import Chat from '../models/chat.model.js';
-import { saveMessage } from '../controllers/chat.controller.js';
+import { verifyToken } from '../utils/jwt.utils.js';
 
-// CORS configuration
-const corsOptions = {
-  origin: "http://localhost:3000",
-  methods: ["GET", "POST"],
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
-
-const app = express();
-const server = http.createServer(app);
-
-export const configureSocket = (httpServer) => {
-  const io = new Server(httpServer, {
+const configureSocket = (server) => {
+  const io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:3000",
+      origin: "http://localhost:3000",
       methods: ["GET", "POST"],
-      credentials: true,
-      allowedHeaders: ["Content-Type", "Authorization"]
+      credentials: true
     }
   });
 
-  const users = new Map();
+  // Middleware to authenticate socket connections
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
+      if (!token) {
+        return next(new Error('Authentication error'));
+      }
 
+      const decoded = verifyToken(token);
+      socket.userId = decoded.id;
+      next();
+    } catch (error) {
+      next(new Error('Authentication error'));
+    }
+  });
+
+  // Handle socket connections
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('User connected:', socket.userId);
 
-    socket.on('setup', (userId) => {
-      users.set(userId, socket.id);
-      socket.join(userId);
-      socket.emit('connected');
+    // Join personal room
+    socket.join(socket.userId);
+
+    // Update user status
+    socket.broadcast.emit('user:online', socket.userId);
+
+    // Handle private messages
+    socket.on('message:send', async (data) => {
+      const { receiverId, message } = data;
+      io.to(receiverId).emit('message:receive', {
+        ...message,
+        sender: socket.userId
+      });
     });
 
-    socket.on('join chat', (room) => {
-      socket.join(room);
-      console.log('User joined room:', room);
+    // Handle typing status
+    socket.on('typing:start', (receiverId) => {
+      io.to(receiverId).emit('typing:start', socket.userId);
     });
 
-    socket.on('typing', (room) => {
-      socket.to(room).emit('typing');
+    socket.on('typing:stop', (receiverId) => {
+      io.to(receiverId).emit('typing:stop', socket.userId);
     });
 
-    socket.on('stop typing', (room) => {
-      socket.to(room).emit('stop typing');
-    });
-
-    socket.on('new message', async (messageData) => {
+    // Handle message reactions
+    socket.on('message:react', async ({ messageId, receiverId, reaction, timestamp }) => {
       try {
-        // Message is already saved, just emit to other participants
-        io.to(messageData.chatId).emit('message received', {
-          chatId: messageData.chatId,
-          message: messageData
+        // Broadcast to everyone in the chat except the sender
+        socket.broadcast.to(receiverId).emit('message:reaction', {
+          messageId,
+          userId: socket.userId,
+          reaction,
+          timestamp
         });
-
-        console.log('Message emitted:', messageData);
       } catch (error) {
-        console.error('Error handling message:', error);
-        socket.emit('message error', { 
-          error: 'Failed to process message',
-          details: error.message 
-        });
+        console.error('Reaction broadcast error:', error);
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
-      users.forEach((value, key) => {
-        if (value === socket.id) {
-          users.delete(key);
-        }
+    // Handle read receipts
+    socket.on('message:read', (data) => {
+      const { messageId, senderId } = data;
+      io.to(senderId).emit('message:seen', {
+        messageId,
+        userId: socket.userId
       });
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.userId);
+      socket.broadcast.emit('user:offline', socket.userId);
     });
   });
 
   return io;
 };
 
-const io = configureSocket(server);
-
-server.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
-});
+export default configureSocket;

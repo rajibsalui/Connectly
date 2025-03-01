@@ -29,31 +29,31 @@ export const signUp = async (email: string, password: string): Promise<User> => 
 };
 
 // Login with email and password
-export const login = async (email: string, password: string): Promise<User> => {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+// export const login = async (email: string, password: string): Promise<User> => {
+//   try {
+//     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+//     const user = userCredential.user;
     
-    // Get Firebase ID token
-    const token = await user.getIdToken();
-    // console.log(user);
-    // Save user details to MongoDB
-    // await axios.post('http://localhost:5000/users/login', {
-    //   uid: user.uid,
-    //   email: user.email,
-    //   displayName: user.displayName || email.split('@')[0],
-    //   photoURL: user.photoURL || '',
-    // });
+//     // Get Firebase ID token
+//     const token = await user.getIdToken();
+//     // console.log(user);
+//     // Save user details to MongoDB
+//     // await axios.post('http://localhost:5000/users/login', {
+//     //   uid: user.uid,
+//     //   email: user.email,
+//     //   displayName: user.displayName || email.split('@')[0],
+//     //   photoURL: user.photoURL || '',
+//     // });
 
-    // Save token in local storage
-    localStorage.setItem('token', token);
+//     // Save token in local storage
+//     localStorage.setItem('token', token);
     
-    return user;
-  } catch (error) {
-    console.error("Login error", error);
-    throw error;
-  }
-};
+//     return user;
+//   } catch (error) {
+//     console.error("Login error", error);
+//     throw error;
+//   }
+// };
 
 // Log in with Google
 export const handleGoogleLogin = async () => {

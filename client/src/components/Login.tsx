@@ -141,8 +141,8 @@ const Login = () => {
                 onClick={async () => {
                   const val = await handleGoogleLogin();
                   // console.log(val && val.user)
-                  if (val && val.true) router.push(`/chat/${val.user}`);
-                  else router.push("/");
+                  if (val && val.true) router.push(`/chat/${val.user}`); // It will redirect to chat page
+                  else router.push("/"); // It will redirect to home page
                 }}
                 className="mt-4 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
               >
