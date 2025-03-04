@@ -1,35 +1,99 @@
-import User from '../models/user.model.js';
-import { generateToken } from '../utils/jwt.utils.js';
-import { uploadImage } from '../utils/uploadImage.js';
-import bcrypt from 'bcryptjs';
+import User from "../models/user.model.js";
+import { generateToken } from "../utils/jwt.utils.js";
+import { uploadImage } from "../utils/uploadImage.js";
+import bcrypt from "bcryptjs";
 
 // Register user
+// export const register = async (req, res) => {
+//   try {
+//     const { firstName, lastName, email, password } = req.body;
+//     // Validate input
+//     if (!firstName || !lastName || !email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Please provide all required fields",
+//       });
+//     }
+
+//     // Check if user already exists
+//     const userExists = await User.findOne({
+//       $or: [
+//         { email: email.toLowerCase() },
+//         { username: username.toLowerCase() },
+//       ],
+//     });
+
+//     if (userExists) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User already exists",
+//       });
+//     }
+
+//     // Create user with hashed password
+//     const user = await User.create({
+//       firstName,
+//       lastName,
+//       username: username.toLowerCase(),
+//       email: email.toLowerCase(),
+//       password,
+//     });
+
+//     // Generate token
+//     const token = generateToken(user._id);
+
+//     // Set cookie
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "strict",
+//       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+//     });
+
+//     // Remove password from response
+//     const userResponse = user.toObject();
+//     delete userResponse.password;
+
+//     res.status(201).json({
+//       success: true,
+//       token,
+//       user: userResponse,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error creating user",
+//     });
+//   }
+// };
+
 export const register = async (req, res) => {
   try {
-    const { firstName, lastName, username, email, password } = req.body;
+    const { firstName, lastName, email, password, username } = req.body;
 
     // Validate input
-    if (!firstName || !lastName || !username || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !username) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields'
+        message: "Please provide all required fields",
       });
     }
 
     // Check if user already exists
-    const userExists = await User.findOne({ 
+    const userExists = await User.findOne({
       $or: [
-        { email: email.toLowerCase() }, 
-        { username: username.toLowerCase() }
-      ] 
+        { email: email.toLowerCase() },
+        { username: username.toLowerCase() },
+      ],
     });
 
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists'
+        message: "User already exists",
       });
     }
+
 
     // Create user with hashed password
     const user = await User.create({
@@ -44,11 +108,11 @@ export const register = async (req, res) => {
     const token = generateToken(user._id);
 
     // Set cookie
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
     // Remove password from response
@@ -58,12 +122,84 @@ export const register = async (req, res) => {
     res.status(201).json({
       success: true,
       token,
-      user: userResponse
+      user: userResponse,
     });
   } catch (error) {
+    console.error(error); // Log the error for debugging
     res.status(500).json({
       success: false,
-      message: 'Error creating user'
+      message: "Error creating user",
+      error: error.message, // Include error message for debugging
+    });
+  }
+};
+
+// Firebase authentication
+export const firebaseAuth = async (req, res) => {
+  try {
+    const { user: firebaseUser } = req.body;
+
+    if (!firebaseUser?.uid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Firebase user data",
+      });
+    }
+
+    // Find or create user
+    let user = await User.findOne({
+      $or: [{ firebaseUid: firebaseUser.uid }, { email: firebaseUser.email }],
+    });
+
+    if (!user) {
+      // Create new user
+      const names = firebaseUser.displayName?.split(" ") || [];
+      user = await User.create({
+        firstName: names[0] || "",
+        lastName: names.slice(1).join(" ") || "",
+        email: firebaseUser.email,
+        username: firebaseUser.email.split("@")[0],
+        firebaseUid: firebaseUser.uid,
+        phoneNumber: firebaseUser.phoneNumber || "",
+        authProvider: "google",
+        avatar: firebaseUser.photoURL || "",
+        isVerified: firebaseUser.emailVerified,
+        isOnline: true,
+        lastSeen: new Date(),
+      });
+    } else {
+      // Update existing user
+      user.isOnline = true;
+      user.lastSeen = new Date();
+      user.firebaseUid = firebaseUser.uid;
+      if (!user.avatar && firebaseUser.photoURL) {
+        user.avatar = firebaseUser.photoURL;
+      }
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        username: user.username,
+        avatar: user.avatar,
+        isOnline: user.isOnline,
+        authProvider: user.authProvider,
+      },
+    });
+  } catch (error) {
+    console.error("Firebase auth error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Authentication failed",
     });
   }
 };
@@ -76,16 +212,20 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password'
+        message: "Please provide email and password",
       });
     }
 
-    // Check if user exists and get password
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    // Find user and check if it's an email/password user
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      authProvider: "email",
+    }).select("+password");
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials or wrong authentication method",
       });
     }
 
@@ -94,7 +234,7 @@ export const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -107,11 +247,11 @@ export const login = async (req, res) => {
     const token = generateToken(user._id);
 
     // Set cookie
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     // Remove password from response
@@ -121,12 +261,12 @@ export const login = async (req, res) => {
     res.status(200).json({
       success: true,
       token,
-      user: userResponse
+      user: userResponse,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error logging in'
+      message: "Error logging in",
     });
   }
 };
@@ -137,49 +277,57 @@ export const logout = async (req, res) => {
     // Update user status
     await User.findByIdAndUpdate(req.user.id, {
       isOnline: false,
-      lastSeen: Date.now()
+      lastSeen: Date.now(),
     });
 
     // Clear cookie
-    res.clearCookie('token', {
+    res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
 
     res.status(200).json({
       success: true,
-      message: 'Logged out successfully'
+      message: "Logged out successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error logging out'
+      message: "Error logging out",
     });
   }
-}; 
+};
 
 // Update profile
 export const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, username, email, currentPassword, newPassword } = req.body;
+    const {
+      firstName,
+      lastName,
+      username,
+      email,
+      currentPassword,
+      newPassword,
+    } = req.body;
     const avatar = req.body.avatar;
 
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await User.findById(req.user.id).select("+password");
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     // Check file size if avatar is being updated
     if (avatar && avatar !== user.avatar) {
-      const sizeInMB = Buffer.from(avatar.split(',')[1], 'base64').length / (1024 * 1024);
+      const sizeInMB =
+        Buffer.from(avatar.split(",")[1], "base64").length / (1024 * 1024);
       if (sizeInMB > 5) {
         return res.status(400).json({
           success: false,
-          message: 'Image size should not exceed 5MB'
+          message: "Image size should not exceed 5MB",
         });
       }
     }
@@ -189,7 +337,7 @@ export const updateProfile = async (req, res) => {
       if (!currentPassword) {
         return res.status(400).json({
           success: false,
-          message: 'Current password is required'
+          message: "Current password is required",
         });
       }
 
@@ -197,7 +345,7 @@ export const updateProfile = async (req, res) => {
       if (!isPasswordValid) {
         return res.status(401).json({
           success: false,
-          message: 'Current password is incorrect'
+          message: "Current password is incorrect",
         });
       }
 
@@ -206,14 +354,14 @@ export const updateProfile = async (req, res) => {
 
     // Handle username update
     if (username && username !== user.username) {
-      const usernameExists = await User.findOne({ 
+      const usernameExists = await User.findOne({
         username: username.toLowerCase(),
-        _id: { $ne: user._id }
+        _id: { $ne: user._id },
       });
       if (usernameExists) {
         return res.status(400).json({
           success: false,
-          message: 'Username already taken'
+          message: "Username already taken",
         });
       }
       user.username = username.toLowerCase();
@@ -221,14 +369,14 @@ export const updateProfile = async (req, res) => {
 
     // Handle email update
     if (email && email !== user.email) {
-      const emailExists = await User.findOne({ 
+      const emailExists = await User.findOne({
         email: email.toLowerCase(),
-        _id: { $ne: user._id }
+        _id: { $ne: user._id },
       });
       if (emailExists) {
         return res.status(400).json({
           success: false,
-          message: 'Email already taken'
+          message: "Email already taken",
         });
       }
       user.email = email.toLowerCase();
@@ -245,7 +393,7 @@ export const updateProfile = async (req, res) => {
       } catch (error) {
         return res.status(400).json({
           success: false,
-          message: 'Error uploading avatar'
+          message: "Error uploading avatar",
         });
       }
     }
@@ -257,12 +405,12 @@ export const updateProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      user: userResponse
+      user: userResponse,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || 'Error updating profile'
+      message: error.message || "Error updating profile",
     });
   }
 };
@@ -271,12 +419,12 @@ export const updateProfile = async (req, res) => {
 export const checkAuth = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
         isLoggedIn: false,
-        message: 'Not authenticated'
+        message: "Not authenticated",
       });
     }
 
@@ -291,14 +439,16 @@ export const checkAuth = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         isOnline: user.isOnline,
-        lastSeen: user.lastSeen
-      }
+        lastSeen: user.lastSeen,
+        contacts: user.contacts,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       isLoggedIn: false,
-      message: 'Error checking authentication status'
+      message: "Error checking authentication status",
     });
   }
 };

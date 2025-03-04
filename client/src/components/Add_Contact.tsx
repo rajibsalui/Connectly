@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { IoPersonAdd, IoSearch, IoClose, IoCheckmarkCircle } from 'react-icons/io5';
+import { useParams } from 'next/navigation';
 
 interface User {
   _id: string;
-  displayName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   photoURL?: string;
 }
@@ -16,10 +19,12 @@ interface AddContactPopupProps {
 }
 
 const AddContactPopup: React.FC<AddContactPopupProps> = ({ isOpen, onClose }) => {
-  const { user, getAllUsers, addContact, getContacts, contacts } = useAuth();
+  const params = useParams();
+  const userId = params?.userId as string;
+  const { user, getAllUsers,getContacts, addContact, contacts, getUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [contactEmails, setContactEmails] = useState<string[]>([]);
@@ -28,20 +33,21 @@ const AddContactPopup: React.FC<AddContactPopupProps> = ({ isOpen, onClose }) =>
     const fetchUsers = async () => {
       try {
         const { users: fetchedUsers } = await getAllUsers(page, 10);
-        // Get current contact emails
-        const currentContactEmails = contacts.map((contact: { email: string }) => contact.email);
+        const currentContactEmails = contacts?.map((contact: { _id : string }) => contact._id) || [];
         setContactEmails(currentContactEmails);
-
-        // Filter out current user and contacts
+        // console.log(contactEmails)
+        // console.log(contacts)
+        // console.log(fetchedUsers)
         const filteredUsers = fetchedUsers
-          .filter(u => u.email !== user?.email && !currentContactEmails.includes(u.email))
+          .filter(u => !currentContactEmails.includes(u._id))
           .map(u => ({
             _id: u._id,
-            displayName: u.displayName,
+            firstName: u.firstName || u.email.split('@')[0],
+            lastName: u.lastName || '',
             email: u.email,
-            photoURL: u.photoURL,
+            photoURL: u.photoURL || u.avatar
           }));
-
+        // console.log(filteredUsers)
         setUsers(filteredUsers);
       } catch (error) {
         console.error('Failed to fetch users:', error);
@@ -56,71 +62,120 @@ const AddContactPopup: React.FC<AddContactPopupProps> = ({ isOpen, onClose }) =>
     }
   }, [isOpen, page, user, getAllUsers, contacts]);
 
-  const handleAddContact = async () => {
-    if (!selectedUser) {
-      toast.error('Please select a user to add');
+  const handleAddContacts = async () => {
+    if (selectedUsers.length === 0) {
+      toast.error('Please select at least one user to add');
       return;
     }
 
     try {
-      await addContact(selectedUser);
-      toast.success('Contact added successfully');
+      for (const userId of selectedUsers) {
+        await addContact(userId);
+      }
+      toast.success(`Added ${selectedUsers.length} contact${selectedUsers.length > 1 ? 's' : ''} successfully`);
+      getContacts(user.id);
+      getUser(userId)
       onClose();
     } catch (error) {
-      // console.error('Failed to add contact:', error);
-      toast.error('Contact Already Added');
+      toast.error('Failed to add contacts');
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const filteredUsers = users.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (user.firstName?.toLowerCase() || '').includes(searchLower) ||
+      (user.lastName?.toLowerCase() || '').includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower)
+    );
+  });
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-96 max-h-[80vh] flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-semibold">Add New Contact</h2>
-          <input
-            type="text"
-            placeholder="Search users..."
-            className="w-full mt-2 p-2 border rounded-lg"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+    <div className="relative inset-0 bg-base-200/95 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-base-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold flex items-center gap-3">
+                <IoPersonAdd className="text-primary w-7 h-7" />
+                Add New Contacts
+              </h2>
+              <p className="text-base-content/60 mt-1">Connect with other users on the platform</p>
+            </div>
+            <button 
+              onClick={onClose}
+              className="btn btn-ghost btn-circle hover:bg-base-200/70"
+            >
+              <IoClose className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="mt-6 relative">
+            <IoSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/60 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              className="input input-bordered w-full pl-12 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* User List */}
+        <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <span className="loading loading-spinner loading-lg text-primary"></span>
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredUsers.map((user, index) => (
-                // if(user !== )
+            <div className="divide-y divide-base-200">
+              {filteredUsers.map((user) => (
                 <div
                   key={user._id}
-                  className={`flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 ${
-                    selectedUser === user._id ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => setSelectedUser(user._id)}
+                  className={`
+                    flex items-center px-4 py-2 cursor-pointer
+                    transition-all duration-200 ease-in-out
+                    hover:bg-base-200/70 rounded-xl
+                    ${selectedUsers.includes(user._id) ? 'bg-primary/10' : ''}
+                  `}
+                  onClick={() => toggleUserSelection(user._id)}
                 >
-                  <div className="w-10 h-10 relative rounded-full overflow-hidden">
-                    <Image
-                      src={user.photoURL || '/default-avatar.png'}
-                      alt={`${user.displayName}'s avatar`}
-                      width={40}
-                      height={40}
-                      className="object-cover"
-                    />
+                  <div className="relative">
+                    <div className={`
+                      rounded-xl overflow-hidden w-14 h-14
+                      ${selectedUsers.includes(user._id) ? 'ring-2 ring-primary ring-offset-2' : ''}
+                    `}>
+                      <Image
+                        src={user.photoURL || '/default-avatar.png'}
+                        alt={`${user.firstName}'s avatar`}
+                        width={56}
+                        height={56}
+                        className="rounded-xl object-cover w-full h-full"
+                      />
+                    </div>
+                    {selectedUsers.includes(user._id) && (
+                      <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5">
+                        <IoCheckmarkCircle className="w-5 h-5 text-primary-content" />
+                      </div>
+                    )}
                   </div>
-                  <div className="ml-3 flex-1">
-                    <p className="font-medium">{user.displayName}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
+                  <div className="ml-4 flex-1 min-w-0">
+                    <p className="font-medium truncate">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-sm text-base-content/60 truncate">{user.email}</p>
                   </div>
                 </div>
               ))}
@@ -128,24 +183,35 @@ const AddContactPopup: React.FC<AddContactPopupProps> = ({ isOpen, onClose }) =>
           )}
         </div>
 
-        <div className="p-4 border-t flex justify-end space-x-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAddContact}
-            disabled={!selectedUser}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedUser
-                ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Add Contact
-          </button>
+        {/* Footer */}
+        <div className="p-6 border-t border-base-200 bg-base-200/30 backdrop-blur-sm">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
+            {/* <div className="flex items-center gap-2">
+              {selectedUsers.length > 0 && (
+                <div className="badge badge-primary badge-outline tracking-tighter leading-none">
+                  <p>{selectedUsers.length} selected</p>
+                </div>
+              )}
+              <p className="text-base-content/70 text-sm">
+                {selectedUsers.length > 0 ? 'Ready to add contacts' : 'Select users to add as contacts'}
+              </p>
+            </div> */}
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="btn btn-ghost hover:bg-base-200/70"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddContacts}
+                disabled={selectedUsers.length === 0}
+                className="btn btn-primary min-w-[120px] disabled:opacity-50"
+              >
+                {selectedUsers.length > 0 ? `Add ${selectedUsers.length} Contact${selectedUsers.length > 1 ? 's' : ''}` : 'Select Users'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
