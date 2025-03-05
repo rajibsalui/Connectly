@@ -1,190 +1,79 @@
-// import express from 'express';
-// import { createServer } from 'http';
-// import { Server } from 'socket.io';
-// import cors from 'cors';
-// import connectDB from './config/db.config.js';
-// import dotenv from 'dotenv';
-// import userRoutes from './routes/user.routes.js';
-// import createHttpError from 'http-errors';
-// import cookieParser from 'cookie-parser';
-// import logger from 'morgan';
-// import expresssession from 'express-session';
-// import flash from 'connect-flash';
-// import passport from 'passport';
-// import User from './models/user.model.js';
-// import path from 'path';
-// import chatRoutes from './routes/chat.routes.js';
-// import { configureSocket } from './config/socket.config.js';
-
-// dotenv.config();
-
-// const app = express();
-// const httpServer = createServer(app);
-// const serverPort = process.env.PORT || 5000; // Server port
-// const clientPort = 3000; // Client port
-
-// const corsOptions = {
-//   origin: process.env.CLIENT_URL || 'http://localhost:3001',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   credentials: true
-// };
-
-// app.use(cors(corsOptions));
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: false }));
-// // view engine setup
-// const __dirname = path.dirname(new URL(import.meta.url).pathname);
-
-// app.set('views', path.join(__dirname, 'views'));
-// app.set('view engine', 'ejs');
-
-// app.use(expresssession({
-//    secret: process.env.JWT_SECRET || "secret-key",
-//    resave: false,
-//    saveUninitialized: false,
-//    cookie: {
-//      secure: process.env.NODE_ENV === 'production',
-//      httpOnly: true,
-//      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-//    }
-//  })); 
-// app.use(passport.initialize());
-// app.use(passport.session());
-// passport.serializeUser((user, done) => {
-//    done(null, user.id); // or any unique identifier
-//  });
- 
-//  passport.deserializeUser(async (id, done) => {
-//    const user = await User.findById(id);
-//    done(null, user);
-//  });
-// app.use(flash());
-
-// app.use(logger('dev'));
-// app.use(cookieParser());
-// app.use(express.static(path.join(__dirname, 'public')));
-
-// // Routes
-
-// app.get("/", async (req, res) => {
-//     res.status(200).json({
-//     message: "Welcome to the API",
-//    });
-// });
-
-// app.use("/users",userRoutes);
-// app.use('/chat', chatRoutes);
-
-// // Socket.IO setup
-// const io = new Server(httpServer, {
-//   cors: corsOptions
-// });
-
-// configureSocket(io);
-
-// const startServer = async () => {
-//     try {
-//         await connectDB(); // Connect to database first
-        
-//         // Start the server
-//         httpServer.listen(serverPort, () => { 
-//             console.log(`Server running at http://localhost:${serverPort}`);
-//             console.log(`Socket.IO listening for connections`);
-//         });
-//     } catch (error) {
-//         console.error("Error starting server:", error);
-//         process.exit(1);
-//     }
-// };
-
-// // Start the server
-// startServer().catch(console.error);
-
-// // catch 404 and forward to error handler
-// app.use(function(req, res, next) {
-//    next(createError(404));
-//  });
- 
-// // Error handler
-// app.use(function(err, req, res, next) {
-//   console.error(err.stack);
-  
-//   // Handle API errors with JSON response
-//   if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-//     return res.status(err.status || 500).json({
-//       success: false,
-//       message: err.message,
-//       error: process.env.NODE_ENV === 'development' ? err : {}
-//     });
-//   }
-
-//   // Set locals, only providing error in development
-//   res.locals.message = err.message;
-//   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-//   // Render the error page
-//   res.status(err.status || 500);
-//   res.render('error');
-// });
-
-// export default app;
-
 import express from 'express';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import connectDB from './config/db.config.js';
-import configureSocket from './config/socket.io.config.js';
-import authRoutes from './routes/auth.routes.js';
-import messageRoutes from './routes/message.routes.js';
-import userRoutes from './routes/user.routes.js';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+
+// Import configurations
+import { corsOptions, rateLimitOptions } from './config/server.config.js';
+import connectDB from './config/db.config.js';
+import configureSocket from './config/socket.config.js';
+
+// Import routes
+import authRoutes from './routes/auth.routes.js';
+import messageRoutes from './routes/message.routes.js';
+import userRoutes from './routes/user.routes.js';
+// import chatRoutes from './routes/chat.routes.js';
+
+// Import middleware
+import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+import { requestLogger } from './middleware/logging.middleware.js';
+
+// Load environment variables
 dotenv.config();
 
-connectDB();
-
+// Initialize express app
 const app = express();
 const httpServer = createServer(app);
+
+// Connect to database
+connectDB().then(() => {
+  console.log('📦 Connected to MongoDB');
+}).catch((error) => {
+  console.error('❌ MongoDB connection error:', error);
+  process.exit(1);
+});
+
+// Configure Socket.IO
 const io = configureSocket(httpServer);
+app.set('io', io);
 
-
+// File path configuration
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORT || 5000;
-app.use(cors(
-  {
-    origin: 'http://localhost:3000',
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }
-));
-// Middleware with increased limit
+// Security middleware
+app.use(helmet());
+app.use(cors(corsOptions));
+app.use(rateLimit(rateLimitOptions));
+
+// Request parsing middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
+app.use(compression());
 
-// CORS configuration if needed
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.header('Access-Control-Allow-Credentials', true);
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-});
+// Logging middleware
+app.use(morgan('dev'));
+app.use(requestLogger);
 
-// Make io available in routes
-app.set('io', io);
+// API routes
+const apiRouter = express.Router();
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/messages', messageRoutes);
+apiRouter.use('/users', userRoutes);
+// apiRouter.use('/chat', chatRoutes);
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/users', userRoutes);
+// Mount API routes
+app.use('/api', apiRouter);
 
-
+// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
   app.get('*', (req, res) => {
@@ -192,16 +81,39 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+// Error handling
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// Start server
+const PORT = process.env.PORT || 5000;
+const startServer = async () => {
+  try {
+    httpServer.listen(PORT, () => {
+      console.log(`
+🚀 Server is running!
+📡 PORT: ${PORT}
+🔊 MODE: ${process.env.NODE_ENV}
+⚡ API: http://localhost:${PORT}/api
+      `);
+    });
+  } catch (error) {
+    console.error('❌ Server startup error:', error);
+    process.exit(1);
+  }
+};
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+process.on('unhandledRejection', (error) => {
+  console.error('❌ Unhandled Rejection:', error);
+  process.exit(1);
 });
+
+startServer();
+
+export default app;

@@ -6,7 +6,7 @@ import multer from 'multer';
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'pingme/files',
+    folder: 'connectly/files',
     resource_type: 'auto',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'mp3', 'mp4'],
     max_file_size: 20000000 // 20MB
@@ -28,7 +28,7 @@ export const uploadFile = async (file) => {
   try {
     const result = await cloudinary.uploader.upload(file.path, {
       resource_type: 'auto',
-      folder: 'pingme/files'
+      folder: 'connectly/files'
     });
     return result.secure_url;
   } catch (error) {

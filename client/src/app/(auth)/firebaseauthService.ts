@@ -1,16 +1,15 @@
 import {
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   User,
 } from "firebase/auth";
 import { firebaseConfig } from "./firebase.config";
-import { MouseEventHandler } from "react";
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import axios from 'axios'; // Import axios for making HTTP requests
-import { useRouter } from "next/navigation";
+import axios from 'axios';
+import { config } from '@/config/config';
+// import { useAuth } from "@/context/AuthContext";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -28,58 +27,68 @@ export const signUp = async (email: string, password: string): Promise<User> => 
   }
 };
 
-// Login with email and password
-// export const login = async (email: string, password: string): Promise<User> => {
-//   try {
-//     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-//     const user = userCredential.user;
-    
-//     // Get Firebase ID token
-//     const token = await user.getIdToken();
-//     // console.log(user);
-//     // Save user details to MongoDB
-//     // await axios.post('http://localhost:5000/users/login', {
-//     //   uid: user.uid,
-//     //   email: user.email,
-//     //   displayName: user.displayName || email.split('@')[0],
-//     //   photoURL: user.photoURL || '',
-//     // });
-
-//     // Save token in local storage
-//     localStorage.setItem('token', token);
-    
-//     return user;
-//   } catch (error) {
-//     console.error("Login error", error);
-//     throw error;
-//   }
-// };
-
-// Log in with Google
+// Sign in with Google
 export const handleGoogleLogin = async () => {
   try {
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const token = credential?.accessToken;
-    // const router = useRouter();
-    const user = result.user;
-    // console.log(user);
+    // const { getUser } = useAuth();
     
-    // Save user details to MongoDB
-    const res = await axios.post('http://localhost:5000/users/login', {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-    });
-    // console.log(res.data.token);
-    // Save token in local storage
-    localStorage.setItem('token', res.data.token);
-    return {true:true,user:res.data._id};
-    // console.log('User:', user);
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Get the ID token
+    const idToken = await user.getIdToken();
+
+    // Add retry logic for 429 errors
+    const maxRetries = 3;
+    let retryCount = 0;
+    let response;
+
+    while (retryCount < maxRetries) {
+      try {
+        response = await axios.post(`${config.serverUrl}/auth/firebase`, {
+          user: {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            phoneNumber: user.phoneNumber,
+            providerData: user.providerData
+          }
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        break; // If successful, exit the retry loop
+      } catch (error: any) {
+        if (error.response?.status === 429 && retryCount < maxRetries - 1) {
+          retryCount++;
+          // Exponential backoff: wait longer between each retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+          continue;
+        }
+        throw error; // If not a 429 error or max retries reached, rethrow
+      }
+    }
+
+    if (!response || !response.data.success) {
+      throw new Error(response?.data?.message || 'Failed to authenticate with backend');
+    }
+
+    // Save JWT token from our backend
+    localStorage.setItem('token', response.data.token);
+    // getUser(response.data.user.id);
+    
+    console.log('Firebase authentication successful:', response.data.user);
+    return {
+      success: true,
+      user: response.data.user,
+      token: response.data.token
+    };
 
   } catch (error) {
-    console.error('Error during Google login:', error);
+    console.error('Firebase authentication error:', error);
+    throw error;
   }
 };
 
@@ -87,8 +96,16 @@ export const handleGoogleLogin = async () => {
 export const logOut = async (): Promise<void> => {
   try {
     await signOut(auth);
+    localStorage.removeItem('token');
+    
+    // Notify backend about logout
+    await axios.post(`${config.serverUrl}/api/auth/logout`, {}, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
   } catch (error) {
-    console.error("Log out error", error);
+    console.error("Logout error:", error);
     throw error;
   }
 };

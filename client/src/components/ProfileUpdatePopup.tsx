@@ -1,232 +1,324 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useAuth } from '@/context/AuthContext';
-import { useParams, useRouter } from "next/navigation";
+"use client";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import assets from "../assets/assets";
-import toast from 'react-hot-toast';
+import {
+  IoCamera,
+  IoMailOutline,
+  IoPersonOutline,
+  IoAtCircleOutline,
+  IoKeyOutline,
+  IoLogOutOutline,
+  IoCloseOutline,
+  IoChevronForward,
+} from "react-icons/io5";
+import toast from "react-hot-toast";
 
-interface UpdateUserData {
-  displayName: string;
-  phoneNumber?: string;
-  profilePic?: string;
+interface ProfileUpdatePopupProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-interface FormData {
-  displayName: string;
-  email: string;
-  phoneNumber: string;
-  profilePic: string | null;
-}
-
-const ProfileUpdatePopup = () => {
-  const id = useParams();
-  const { user, logout, updateProfile, getUser } = useAuth();
+const ProfileUpdatePopup: React.FC<ProfileUpdatePopupProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const { user, getUser, logout, updateProfile } = useAuth();
+  const params = useParams();
+  const userId = params?.userId as string;
   const router = useRouter();
-  const popupRef = useRef<HTMLDivElement | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    displayName: "",
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
     email: "",
-    phoneNumber: "",
-    profilePic: null
+    currentPassword: "",
+    newPassword: "",
+    avatar: null as string | null,
   });
 
-  // Update formData when user data is available
   useEffect(() => {
-    // console.log(user)
+    const fetchUser = async () => {
+      if (userId) {
+        await getUser(userId);
+      }
+    };
+
+    fetchUser();
+  }, [userId, getUser]);
+
+  useEffect(() => {
     if (user) {
       setFormData({
-        displayName: user.displayName || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        username: user.username || "",
         email: user.email || "",
-        phoneNumber: user.phoneNumber || "",
-        profilePic: user.photoURL || null
+        currentPassword: "",
+        newPassword: "",
+        avatar: user.avatar || null,
       });
     }
   }, [user]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
+        toast.error("Image size should be less than 5MB");
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          profilePic: reader.result as string
+          avatar: reader.result as string,
         }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const validateForm = (): boolean => {
-    if (!formData.displayName.trim()) {
-      toast.error('Name fields are required');
-      return false;
-    }
-
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)) {
-      toast.error('Invalid phone number format');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // if (!validateForm()) return;
-
     setIsLoading(true);
-    try {
-      const updateData: UpdateUserData = {
-        displayName: formData.displayName.trim(),
-        phoneNumber: formData.phoneNumber,
-        profilePic: formData.profilePic || undefined
-      };
 
-      await updateProfile(updateData);
-      toast.success('Profile updated successfully');
-      setIsOpen(false);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Failed to update profile';
-      toast.error(errorMessage);
+    try {
+      await updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        avatar: formData.avatar,
+        ...(showPasswordFields && {
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword,
+        }),
+      });
+      toast.success("Profile updated successfully");
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogout =  () => {
+  if (!isOpen) return null;
+
+  const handleLogout = async () => {
     try {
-      logout();
-      router.push('/');
+      await logout();
+      router.push("/");
     } catch (error) {
-      toast.error('Logout failed');
+      toast.error("Failed to logout");
     }
   };
-  // console.log(id)
-
-  useEffect(() => {
-    const chatId = typeof id.chat_id === 'string' ? id.chat_id : '';
-    if (chatId) {
-      getUser(chatId);
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    // console.log(user)
-
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, id.chat_id]);
 
   return (
-    <div className="relative">
-      <button onClick={() => setIsOpen(true)} className="navbar-icon">
-        <Image
-          src={formData.profilePic || assets.profile_img.src}
-          alt="Profile"
-          width={40}
-          height={40}
-          className="rounded-full object-cover"
-        />
-      </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto">
+      <div className="container mx-auto px-4 mt-10 min-h-screen flex items-center justify-center">
+        <div className="card bg-base-100 shadow-2xl w-full max-w-4xl animate-fadeIn">
+          <div className="card-body p-8">
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="btn btn-ghost btn-circle btn-sm absolute right-4 top-4"
+            >
+              <IoCloseOutline className="w-6 h-6" />
+            </button>
 
-      {isOpen && (
-        <div ref={popupRef} className="popup fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl z-50 w-[30rem]">
-          <h2 className="text-xl font-semibold mb-4">Update Profile</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex justify-center mb-6">
-              <label className="relative cursor-pointer">
-                <Image
-                  src={formData.profilePic || assets.profile_img.src}
-                  alt="Profile"
-                  width={120}
-                  height={120}
-                  className="rounded-full object-cover"
-                />
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-              </label>
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-primary">Profile Settings</h2>
+              <p className="text-base-content/60 mt-2">
+                Manage your personal information and account settings
+              </p>
             </div>
 
-            <div className="space-y-3">
-              <input
-                type="text"
-                name="displayName"
-                value={formData.displayName}
-                onChange={handleChange}
-                placeholder="Display Name"
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Email"
-                className="w-full p-2 border rounded"
-                disabled
-              />
-              <input
-                type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                placeholder="Phone Number"
-                className="w-full p-2 border rounded"
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column - Avatar */}
+                <div className="flex flex-col items-center space-y-6">
+                  <div className="relative group">
+                    <div className="w-48 h-48 overflow-hidden rounded-full relative">
+                      <Image
+                        src={formData.avatar || "/default-avatar.png"}
+                        alt="Profile"
+                        fill
+                        sizes="(max-width: 192px) 100vw"
+                        className="object-cover ring-4 ring-primary ring-offset-base-100 ring-offset-2"
+                      />
+                    </div>
 
-            <div className="flex justify-between mt-6">
-              <button
-                type="button"
-                onClick={()=>{
-                  router.push("/")
-                  setIsOpen(false)
-                  handleLogout()
-                }}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Logout
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              >
-                {isLoading ? 'Updating...' : 'Update Profile'}
-              </button>
-            </div>
-          </form>
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-300">
+                      <IoCamera className="w-8 h-8 text-white" />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-sm text-base-content/70">
+                    Click to upload new profile picture
+                  </p>
+                </div>
+
+                {/* Right Column - Form Fields */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">First Name</span>
+                      </label>
+                      <div className="input-group">
+                        <span className="bg-base-200">
+                          <IoPersonOutline className="w-5 h-5" />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="First Name"
+                          className="input input-bordered w-full"
+                          value={formData.firstName}
+                          onChange={(e) =>
+                            setFormData({ ...formData, firstName: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">Last Name</span>
+                      </label>
+                      <div className="input-group">
+                        <span className="bg-base-200">
+                          <IoPersonOutline className="w-5 h-5" />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Last Name"
+                          className="input input-bordered w-full"
+                          value={formData.lastName}
+                          onChange={(e) =>
+                            setFormData({ ...formData, lastName: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Username</span>
+                    </label>
+                    <div className="input-group">
+                      <span className="bg-base-200">
+                        <IoAtCircleOutline className="w-5 h-5" />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Username"
+                        className="input input-bordered w-full"
+                        value={formData.username}
+                        onChange={(e) =>
+                          setFormData({ ...formData, username: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Email</span>
+                    </label>
+                    <div className="input-group">
+                      <span className="bg-base-200">
+                        <IoMailOutline className="w-5 h-5" />
+                      </span>
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        className="input input-bordered w-full"
+                        value={formData.email}
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  <div className="collapse collapse-plus bg-base-200 rounded-box">
+                    <input
+                      type="checkbox"
+                      checked={showPasswordFields}
+                      onChange={() => setShowPasswordFields(!showPasswordFields)}
+                    />
+                    <div className="collapse-title text-base font-medium flex items-center gap-2">
+                      <IoKeyOutline className="w-5 h-5" />
+                      Change Password
+                    </div>
+                    <div className="collapse-content space-y-4 pt-4">
+                      <input
+                        type="password"
+                        placeholder="Current Password"
+                        className="input input-bordered w-full"
+                        value={formData.currentPassword}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            currentPassword: e.target.value,
+                          })
+                        }
+                      />
+                      <input
+                        type="password"
+                        placeholder="New Password"
+                        className="input input-bordered w-full"
+                        value={formData.newPassword}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            newPassword: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center pt-6 border-t border-base-300">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="btn btn-error btn-outline gap-2"
+                >
+                  <IoLogOutOutline className="w-5 h-5" />
+                  Logout
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn btn-primary gap-2"
+                >
+                  {isLoading ? (
+                    <span className="loading loading-spinner"></span>
+                  ) : (
+                    <>
+                      Save Changes
+                      <IoChevronForward className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

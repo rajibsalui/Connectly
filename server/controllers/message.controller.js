@@ -5,8 +5,8 @@ import { uploadFile } from '../utils/uploadFile.js';
 // Send a new message
 export const sendMessage = async (req, res) => {
   try {
-    const { content, messageType = 'text' } = req.body;
-    const senderId = req.user._id;
+    const { sender, content, messageType = 'text' } = req.body;
+    const senderId = sender;
     const receiverId = req.params.userId;
     let fileUrl = null;
 
@@ -80,6 +80,13 @@ export const getConversation = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized access'
+      });
+    }
+
     // Validate user existence
     const otherUser = await User.findById(userId);
     if (!otherUser) {
@@ -92,8 +99,8 @@ export const getConversation = async (req, res) => {
     // Get messages between users
     const messages = await Message.find({
       $or: [
-        { sender: req.user._id, receiver: userId },
-        { sender: userId, receiver: req.user._id }
+        { sender: req.user.id, receiver: userId },
+        { sender: userId, receiver: req.user.id }
       ],
       deletedFor: { $ne: req.user._id }
     })

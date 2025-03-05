@@ -4,9 +4,10 @@ import { verifyToken } from '../utils/jwt.utils.js';
 const configureSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: process.env.CLIENT_URL || "http://localhost:3000",
       methods: ["GET", "POST"],
-      credentials: true
+      credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"]
     }
   });
 

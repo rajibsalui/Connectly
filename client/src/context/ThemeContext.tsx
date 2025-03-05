@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-type Theme = "light" | "dark" | "colorful";
+type Theme = 'light' | 'dark' | 'cupcake' | 'bumblebee' | 'emerald' | 'corporate' | 'synthwave' | 'retro' | 'cyberpunk' | 'valentine' | 'aqua' | 'luxury';
 
 interface ThemeContextType {
   theme: Theme;
@@ -9,28 +9,50 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "light",
-  setTheme: () => {},
+  theme: 'light',
+  setTheme: () => null,
 });
 
-export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
+    // Check if we're in the browser
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('theme') as Theme) || 'light';
+      const savedTheme = localStorage.getItem('theme') as Theme;
+      const validThemes: Theme[] = ['light', 'dark', 'cupcake', 'bumblebee', 'emerald', 'corporate', 'synthwave', 'retro', 'cyberpunk', 'valentine', 'aqua', 'luxury'];
+      if (savedTheme && validThemes.includes(savedTheme)) {
+        return savedTheme;
+      }
     }
     return 'light';
   });
 
   useEffect(() => {
-    localStorage.setItem('theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
+    // Apply theme on mount and theme changes
+    if (typeof window !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
   }, [theme]);
 
+  const handleThemeChange = (newTheme: Theme) => {
+    const validThemes: Theme[] = ['light', 'dark', 'cupcake', 'bumblebee', 'emerald', 'corporate', 'synthwave', 'retro', 'cyberpunk', 'valentine', 'aqua', 'luxury'];
+    if (validThemes.includes(newTheme)) {
+      setTheme(newTheme);
+    }
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme: handleThemeChange }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+// Custom hook with error handling
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};

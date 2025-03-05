@@ -1,7 +1,7 @@
-'use client'
-import { useParams } from 'next/navigation';
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { config } from '../config/config';
+"use client";
+import { useParams } from "next/navigation";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { config } from "../config/config";
 
 interface AuthContextType {
   user: any;
@@ -14,23 +14,25 @@ interface AuthContextType {
   addContact: (contactId: string) => Promise<void>;
   getContacts: (userId: string) => Promise<void>;
   isAuthenticated: boolean;
-  getAllUsers: (page?: number, limit?: number) => Promise<{
+  getAllUsers: (
+    page?: number,
+    limit?: number
+  ) => Promise<{
     users: User[];
     currentPage: number;
     totalPages: number;
     totalUsers: number;
   }>;
-  saveMessage: (params: SaveMessageParams) => Promise<Message>;
 }
 
 interface User {
-    id: string;
-    email: string;
-    displayName: string;
-    phoneNumber?: string;
-    profilePic?: string;
-    fullName: string;
-  }
+  id: string;
+  email: string;
+  displayName: string;
+  phoneNumber?: string;
+  profilePic?: string;
+  fullName: string;
+}
 
 interface Message {
   _id: string;
@@ -59,6 +61,20 @@ interface SaveMessageParams {
   receiver: string;
 }
 
+interface UserSettings {
+  theme?: string;
+  notifications?: {
+    messages: boolean;
+    sounds: boolean;
+    email: boolean;
+  };
+  privacy?: {
+    onlineStatus: boolean;
+    readReceipts: boolean;
+    typingIndicators: boolean;
+  };
+}
+
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -66,21 +82,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [contacts, setContacts] = useState<User[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  
-
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${config.serverUrl}/users/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
+      const response = await fetch(`${config.serverUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
       if (response.ok) {
         setUser(data.user);
         setIsAuthenticated(true);
-        localStorage.setItem('token', data.token);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.user._id);
       } else {
         throw new Error(data.message);
       }
@@ -91,16 +106,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (userData: any) => {
     try {
-      const response = await fetch(`${config.serverUrl}/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
+      const response = await fetch(`${config.serverUrl}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
       });
       const data = await response.json();
       if (response.ok) {
         setUser(data.user);
         setIsAuthenticated(true);
-        localStorage.setItem('token', data.token);
+        localStorage.setItem("token", data.token);
       } else {
         throw new Error(data.message);
       }
@@ -109,26 +124,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      const response = await fetch(`${config.serverUrl}/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem("token");
+    } catch (error) {
+      throw error;
+    }
   };
   const updateProfile = async (userData: Partial<User>) => {
     try {
-      const response = await fetch(`${config.serverUrl}/users/update`, {
-        method: 'PUT',
+      const response = await fetch(`${config.serverUrl}/auth/update-profile`, {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        credentials: 'include',
-        body: JSON.stringify(userData)
+        credentials: "include",
+        body: JSON.stringify(userData),
       });
 
       if (!response.ok) {
-        throw new Error('Update failed');
+        throw new Error("Update failed");
       }
 
       const data = await response.json();
@@ -142,17 +171,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const addContact = async (contactId: string) => {
     try {
       const response = await fetch(`${config.serverUrl}/users/contacts/add`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        credentials: 'include',
-        body: JSON.stringify({ contactId })
+        credentials: "include",
+        body: JSON.stringify({ contactId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add contact');
+        throw new Error("Failed to add contact");
       }
 
       const data = await response.json();
@@ -162,69 +191,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const id = useParams()
-  const chatId = typeof id.chat_id === 'string' ? id.chat_id : '';
+  const id = useParams();
+  const chatId = typeof id.chat_id === "string" ? id.chat_id : "";
 
-  const getContacts = async (userId: string ) => {
+  const getContacts = async (userId: string) => {
     try {
       // console.log(userId)
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('No authentication token found');
+        throw new Error("No authentication token found");
       }
-  
+
       const response = await fetch(`${config.serverUrl}/users/contacts`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        credentials: 'include'
+        credentials: "include",
       });
-  
+
       if (!response.ok) {
         const error = await response.json();
         // throw new Error(error.message || 'Failed to fetch contacts');
       }
-  
+
       const data = await response.json();
+      // console.log(data.contacts)
       setContacts(data.contacts || []);
-      return data.contacts;
+      return data;
     } catch (error: any) {
-      console.error('Error fetching contacts:', error);
+      console.error("Error fetching contacts:", error);
       setContacts([]);
-      throw new Error(error.message || 'Failed to fetch contacts');
+      throw new Error(error.message || "Failed to fetch contacts");
     }
   };
-  
+
   const getUser = async (userId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('Authentication token not found');
+        throw new Error("Authentication token not found");
       }
 
-      const response = await fetch(`${config.serverUrl}/users/${userId}`, {
-        method: 'GET',
+      const response = await fetch(`${config.serverUrl}/auth/check`, {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        credentials: 'include'
+        credentials: "include",
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch user');
+        throw new Error(error.message || "Failed to fetch user");
       }
 
       const userData = await response.json();
-      setUser(userData);
+      localStorage.setItem("userId", userData.user.id);
+      setUser(userData.user);
       setIsAuthenticated(true);
       return userData;
-
     } catch (error: any) {
-      console.error('Error fetching user:', error);
+      console.error("Error fetching user:", error);
       setUser(null);
       setIsAuthenticated(false);
       // throw new Error(error.message || 'Failed to fetch user');
@@ -233,26 +263,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getAllUsers = async (page: number = 1, limit: number = 10) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('Authentication token not found');
+        throw new Error("Authentication token not found");
       }
 
       const response = await fetch(
         `${config.serverUrl}/users/all?page=${page}&limit=${limit}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          credentials: 'include'
+          credentials: "include",
         }
       );
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch users');
+        throw new Error(error.message || "Failed to fetch users");
       }
 
       const data = await response.json();
@@ -261,76 +291,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         users: data.users,
         currentPage: data.currentPage,
         totalPages: data.totalPages,
-        totalUsers: data.totalUsers
+        totalUsers: data.totalUsers,
       };
     } catch (error: any) {
-      console.error('Error fetching users:', error);
-      throw new Error(error.message || 'Failed to fetch users');
+      console.error("Error fetching users:", error);
+      throw new Error(error.message || "Failed to fetch users");
     }
   };
-
-
-
-  const saveMessage = async ({ chatId, content, sender, receiver }: SaveMessageParams) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-  
-      // First check if chat exists
-      const chatResponse = await fetch(`${config.serverUrl}/chat/${chatId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-  
-      if (!chatResponse.ok) {
-        // If chat doesn't exist, create it
-        await fetch(`${config.serverUrl}/chat`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            participantId: sender
-          })
-        });
-      }
-  
-      // Now save the message
-      const response = await fetch(`${config.serverUrl}/chat/${chatId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          content,
-          sender ,
-          receiverId:receiver,
-        })
-      });
-  
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save message');
-      }
-  
-      const savedMessage = await response.json();
-      return savedMessage;
-    } catch (error: any) {
-      console.error('Error saving message:', error);
-      throw new Error(error.message || 'Failed to save message');
-    }
-  };
-  
 
   return (
-    <AuthContext.Provider value={{ user, getUser, login, register, logout, isAuthenticated , contacts, updateProfile , addContact, getContacts, getAllUsers, saveMessage}}>
+    <AuthContext.Provider
+      value={{
+        user,
+        getUser,
+        login,
+        register,
+        logout,
+        isAuthenticated,
+        contacts,
+        updateProfile,
+        addContact,
+        getContacts,
+        getAllUsers,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

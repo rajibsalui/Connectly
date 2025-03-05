@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+// import '../styles/globals.css';
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "react-hot-toast";
+import ChatProvider from "@/context/ChatContext";
+import { SocketProvider } from "@/context/SocketContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,10 +49,14 @@ export default function RootLayout({
         cz-shortcut-listen={"true"}
       >
         <AuthProvider>
-          <ThemeProvider>
-            <Toaster />
-            {children}
-          </ThemeProvider>
+          <SocketProvider>
+            <ChatProvider>
+              <ThemeProvider>
+                <Toaster />
+                {children}
+              </ThemeProvider>
+            </ChatProvider>
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>

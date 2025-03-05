@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     domains: [
       'lh3.googleusercontent.com', // For Google profile pictures
       'firebasestorage.googleapis.com', // For Firebase Storage images
+      'res.cloudinary.com'
     ],
   },
 };

@@ -1,84 +1,150 @@
-'use client'
-
-import React, { useEffect, useState } from 'react'
-import assets from '../assets/assets'
+"use client";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
 import {
   IoChatbubbleEllipsesOutline,
   IoSettingsOutline,
+  IoColorPaletteOutline,
+  IoPersonOutline,
+  IoCallOutline,
+  IoMenuOutline,
+  IoEllipsisVertical,
+  IoLogOutOutline
 } from "react-icons/io5";
-import { MdAddIcCall } from "react-icons/md";
-import { LuMenu } from 'react-icons/lu';
-import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import ProfileUpdatePopup from './ProfileUpdatePopup'
-import SettingsPage from './Setting_page';
-import { TbCircleDashed } from 'react-icons/tb';
-import { useAuth } from '@/context/AuthContext';
+import ThemeSwitcher from "./ThemeSwitcher";
+import ProfileUpdatePopup from "./ProfileUpdatePopup";
+import SettingsPage from "./Setting_page";
 
 const Navigation_Sidebar = () => {
   const router = useRouter();
-  const id = useParams()
-  const { user, logout, updateProfile ,getUser} = useAuth();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [chatId, setChatId] = useState('');
+  const { user, getUser, logout } = useAuth();
 
-  const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
-  };
+  const params = useParams();
+  const userId = params?.userId as string;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
-    // const currentChatId = typeof id.chat_id === 'string' ? id.chat_id : '';
-    // setChatId(currentChatId);
-    // // console.log(chatId);
-    // getUser(chatId);
+    getUser(userId);
+  }, [userId]);
 
-  })
+  const handleLogout = async () => {
+    try {
+      logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const menuItems = [
+    {
+      icon: <IoChatbubbleEllipsesOutline className="w-6 h-6" />,
+      label: "Chat",
+      onClick: () => router.push(`/chat/${user?.id}`),
+    },
+    {
+      icon: <IoCallOutline className="w-6 h-6" />,
+      label: "Calls",
+      onClick: () => router.push("/call"),
+    },
+    {
+      icon: <IoColorPaletteOutline className="w-6 h-6" />,
+      label: "Theme",
+      onClick: () => {
+        setShowThemeMenu(true)
+        router.push("/theme")
+      },
+    },
+    {
+      icon: <IoPersonOutline className="w-6 h-6" />,
+      label: "Profile",
+      onClick: () => router.push("/profile"),
+    },
+    {
+      icon: <IoSettingsOutline className="w-6 h-6" />,
+      label: "Settings",
+      onClick: () => router.push("/settings"),
+    },
+  ];
 
   return (
-    <div className={`${isExpanded ? 'w-60' : 'w-16'} transition-width duration-300 border-r box5 flex flex-col items-center py-6`}>
-      <div className="flex-1 p-2 flex-col items-center justify-center space-y-8 w-full">
-        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={toggleSidebar}>
-          <div className="flex items-center">
-            <LuMenu className="text-3xl" />
-            {isExpanded && <span className="ml-3 font-semibold ">Menu</span>}
+    <div
+      className={`
+        ${isExpanded ? "w-64" : "w-20"} 
+        transition-all duration-300 ease-in-out
+        min-h-screen bg-base-200/50 backdrop-blur-md
+        border-r border-base-300
+        flex flex-col items-center
+        fixed left-0 top-0
+        z-50
+      `}
+    >
+      {/* Top Section */}
+      <div className="w-full p-4 flex flex-col items-center space-y-4">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="btn btn-ghost btn-circle"
+        >
+          <IoMenuOutline className="w-6 h-6" />
+        </button>
+
+        <div className="relative flex flex-col items-center">
+          <div className={` transition-all relative ${isExpanded ? 'mb-3 w-16 h-16' : ' w-12 h-12'}`}>
+            <Image
+              src={user?.avatar || "/default-avatar.png"}
+              alt="Profile"
+              fill
+              sizes="(max-width: 64px) 100vw"
+              className="rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 object-cover"
+            />
           </div>
-        </div>
-        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push(`/chat/${chatId}`)}>
-          <div className="flex items-center">
-            <IoChatbubbleEllipsesOutline className="text-3xl" />
-            {isExpanded && <span className="ml-3 font-semibold ">Chat</span>}
-          </div>
-        </div>
-        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push("/status")}>
-          <div className="flex items-center">
-            <TbCircleDashed className="text-3xl" />
-            {isExpanded && <span className="ml-3 font-semibold ">Status</span>}
-          </div>
-        </div>
-        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => router.push("/call")}>
-          <div className="flex items-center">
-            <MdAddIcCall className="text-3xl" />
-            {isExpanded && <span className="ml-3 font-semibold ">Call</span>}
-          </div>
+          {isExpanded && (
+            <div className="text-center">
+              <p className="font-medium text-base">{user?.firstName}</p>
+              <p className="text-sm text-base-content/60">{user?.email}</p>
+            </div>
+          )}
         </div>
       </div>
-      <div className="flex flex-col p-2 space-y-6 w-full">
-        <div className="p-3 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => <SettingsPage/>}>
-          <div className="flex items-center">
-            {/* <IoSettingsOutline className="text-3xl" /> */}
-            <SettingsPage/>
-            {isExpanded && <span className="ml-3 font-semibold ">Settings</span>}
-          </div>
-        </div>
-        <div className="p-2 box3 rounded-xl cursor-pointer transition duration-200" onClick={() => <ProfileUpdatePopup/>}>
-          <div className="flex items-center">
-            <ProfileUpdatePopup/>
-            {isExpanded && <span className="ml-3 font-semibold ">Profile</span>}
-          </div>
-        </div>
+
+      {/* Menu Items */}
+      <div className="flex-1 w-full px-3 py-8 space-y-2">
+        {menuItems.map((item, index) => (
+          <button
+            key={index}
+            onClick={item.onClick}
+            className={`
+              btn btn-ghost w-full justify-start gap-3
+              ${isExpanded ? "px-4" : "px-2"}
+              hover:bg-base-300/50
+            `}
+          >
+            {item.icon}
+            {isExpanded && <span>{item.label}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Logout Button */}
+      <div className="w-full px-3 pb-6">
+        <button
+          onClick={handleLogout}
+          className={`
+            btn btn-ghost w-full justify-start gap-3 text-error
+            ${isExpanded ? "px-4" : "px-2"}
+            hover:bg-error/10
+          `}
+        >
+          <IoLogOutOutline className="w-6 h-6" />
+          {isExpanded && <span>Logout</span>}
+        </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Navigation_Sidebar
+export default Navigation_Sidebar;
