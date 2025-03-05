@@ -17,6 +17,7 @@ interface MessageContent {
   content: string;
   sender: string;
   receiver: string;
+  messageType: string;
 }
 
 interface ChatContextType {
@@ -90,22 +91,30 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       if (!token) {
         throw new Error('Authentication token not found');
       }
-
+  
+      const formData = new FormData();
+      formData.append('content', messageContent.content);
+      formData.append('messageType', messageContent.messageType);
+      formData.append('sender', messageContent.sender);
+  
+      if (messageContent.file) {
+        formData.append('file', messageContent.file);
+      }
+  
       const response = await fetch(`${config.serverUrl}/messages/send/${messageContent.receiver}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(messageContent)
+        body: formData, // No need for Content-Type, browser sets it automatically for FormData
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to send message');
       }
-
+  
       const newMessage = await response.json();
-      console.log(newMessage)
+      console.log(newMessage);
       setMessages(prev => [...prev, newMessage.message]);
       return newMessage;
     } catch (error) {
@@ -113,6 +122,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       throw error;
     }
   };
+  
 
   const deleteMessage = async (messageId: string): Promise<void> => {
     try {

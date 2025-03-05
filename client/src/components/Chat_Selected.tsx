@@ -17,7 +17,7 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { config } from "../config/config";
 import { useSocket } from "@/context/SocketContext";
-// import { useSocket } from '@/context/useSocket';
+import { FileInput } from "react-file-input";
 
 interface Contact {
   _id: string;
@@ -38,6 +38,8 @@ interface Message {
   createdAt: Date;
   read: boolean;
   delivered: boolean;
+  messageType?: "text" | "image" | "video";
+  media?: string;
 }
 
 interface Assets {
@@ -49,7 +51,11 @@ interface Assets {
 interface ChatSelectedProps {
   selectedChat: Contact;
   messages: Message[];
-  onSendMessage: (content: string) => void;
+  onSendMessage: (
+    content: string,
+    messageType?: "text" | "image" | "video",
+    media?: string
+  ) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   assets: Assets;
   currentUserId: string;
@@ -87,6 +93,8 @@ const Chat_Selected = ({
 }: ChatSelectedProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [file, setFile] = useState(null);
+  const [fileType, setFileType] = useState("text");
   const { sendMessage, markMessageAsDelivered, getMessages } = useChat();
   const { user } = useAuth();
   const { socket, isTyping } = useSocket();
@@ -122,17 +130,26 @@ const Chat_Selected = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || isSubmitting) return;
+    if (!newMessage.trim() && !file && isSubmitting) return;
 
     try {
+      console.log(fileType);
       setIsSubmitting(true);
       const messageContent = {
         receiver: selectedChat._id,
         content: newMessage.trim(),
         sender: user.id,
+        messageType: file ? fileType : "text",
+        // type: fileType,
+        file: file ? file : null,
       };
       const savedMessage = await sendMessage(messageContent);
-      onSendMessage(savedMessage.content);
+      // console.log(savedMessage);
+      onSendMessage(
+        savedMessage.content,
+        savedMessage.type,
+        savedMessage.media
+      );
       setIsUserTyping(false);
       socket?.emit("typing:stop", selectedChat._id);
       // Mark message as delivered
@@ -150,15 +167,6 @@ const Chat_Selected = ({
           },
         });
       }
-      // if (socket) {
-      //   socket.emit("new message", {
-      //     chatId,
-      //     messageId: message._id,
-      //     content: message.content,
-      //     sender: user._id,
-      //     receiver: selectedChat._id,
-      //   });
-      // }
 
       getMessages(selectedChat._id); // ✅ Update chat dynamically
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,6 +175,7 @@ const Chat_Selected = ({
       }, 100);
 
       setNewMessage("");
+      setFile(null);
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
@@ -205,11 +214,11 @@ const Chat_Selected = ({
   }, [newMessage, socket, selectedChat]);
 
   useEffect(() => {
-    console.log(messages)
+    console.log(messages);
     if (socket && selectedChat) {
       socket.on("message:receive", (message: Message) => {
         if (message.receiver === currentUserId) {
-          onSendMessage(message.content);
+          onSendMessage(message.content, message.type, message.media);
           getMessages(selectedChat._id);
         }
       });
@@ -219,6 +228,18 @@ const Chat_Selected = ({
       };
     }
   }, [socket, selectedChat, onSendMessage, getMessages, currentUserId]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files ? e.target.files[0] : null;
+    if (file && file.size <= 20 * 1024 * 1024) {
+      // 20MB
+      setFile(file);
+      // console.log(file);
+      setFileType(file.type.includes("image") ? "image" : "video");
+    } else {
+      console.error("File size exceeds 20MB");
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-base-100">
@@ -283,10 +304,6 @@ const Chat_Selected = ({
                     src={message.sender.avatar || "/default-avatar.png"}
                     alt={message.sender.username || "User"}
                     className="w-full h-full object-cover"
-                    // onError={(e) => {
-                    //   e.target.onerror = null;
-                    //   e.target.src = "/default-avatar.png";
-                    // }}
                   />
                 </div>
               </div>
@@ -297,7 +314,33 @@ const Chat_Selected = ({
                     : "chat-bubble-neutral"
                 }`}
               >
-                <p className="text-sm">{message.content}</p>
+                {message.messageType === "text" ? (
+                  <p className="text-sm">{message.content}</p>
+                ) : (
+                  <div className="w-full">
+                    {message.messageType === "image" ? (
+                      <div className="w-56 h-56 p-2 relative">
+                        <Image
+                          src={message.fileUrl}
+                          alt="Message"
+                          layout="fill"
+                          fill
+                          sizes="(max-width: 64px) 100vw"
+                          objectFit="cover"
+                          className="rounded-lg shadow-md"
+                        />
+                      </div>
+                    ) : (
+                      <video
+                        controls
+                        className="w-full max-w-xs rounded-lg shadow-md"
+                      >
+                        <source src={message.fileUrl} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-2 mt-1 text-xs opacity-70">
                   {formatTime(message.createdAt)}
                   <MessageStatus
@@ -320,24 +363,34 @@ const Chat_Selected = ({
 
       <div className="p-4 bg-base-200 border-t border-base-300">
         <form onSubmit={handleSubmit} className="join w-full">
-          <button
+          {/* <button
             type="button"
             className="btn btn-ghost join-item"
             title="Add Image"
           >
             <IoImageOutline className="w-5 h-5" />
-          </button>
+          </button> */}
           <input
             type="text"
             placeholder="Type a message..."
-            className="input input-bordered join-item w-full focus:outline-none"
+            className="input input-bordered mr-3 join-item w-full focus:outline-none"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
+          />
+          <input
+            type="file"
+            accept=".jpg, .jpeg, .png, .mp4"
+            onChange={handleFileChange}
+            className="file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-violet-50 file:text-violet-700
+            hover:file:bg-violet-100"
           />
           <button
             type="submit"
             className="btn btn-primary join-item"
-            disabled={isSubmitting || !newMessage.trim()}
+            disabled={isSubmitting || (!newMessage.trim() && !file)}
           >
             <IoSendSharp className="w-5 h-5" />
           </button>
