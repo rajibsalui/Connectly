@@ -5,6 +5,16 @@
   themes: all;
 }
 
+/* Reset default theme transition */
+:root {
+  transition: all 0.2s ease;
+}
+
+/* Force theme color application */
+[data-theme] {
+  color-scheme: var(--theme-color-scheme, light);
+}
+
 *{
     margin: 0;
     padding: 0;
@@ -50,4 +60,100 @@ input[type="number"] {
   background-image: linear-gradient(currentColor 1px, transparent 1px),
     linear-gradient(to right, currentColor 1px, transparent 1px);
   background-size: 48px 48px;
+}
+
+.chat-pattern {
+  background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@layer utilities {
+  .backdrop-blur-sm {
+    backdrop-filter: blur(8px);
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .7;
+    }
+  }
+}
+
+@layer utilities {
+  .media-preview-enter {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .media-preview-exit {
+    animation: fadeOut 0.2s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}
+
+@layer components {
+  .modal-overlay {
+    @apply fixed inset-0 z-50 bg-black/50 backdrop-blur-sm;
+  }
+
+  .modal-content {
+    @apply bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl animate-fadeIn;
+  }
+
+  .contact-list-item {
+    @apply flex items-center gap-4 p-4 cursor-pointer hover:bg-base-200/50 transition-all duration-200;
+  }
+
+  .contact-avatar {
+    @apply relative w-12 h-12 rounded-full overflow-hidden;
+  }
+
+  .contact-info {
+    @apply flex-1 min-w-0;
+  }
+}
+
+@layer components {
+  .reaction-hover {
+    @apply hover:scale-125 transition-transform duration-200;
+  }
+  
+  .reaction-active {
+    @apply scale-125 transition-transform duration-200;
+  }
+  
+  .reaction-count {
+    @apply ml-1 text-xs font-medium opacity-75;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.reaction-animate-in {
+  animation: scaleIn 0.2s ease-out;
 }

@@ -169,6 +169,29 @@ messageSchema.methods.removeReaction = async function(userId) {
   return this;
 };
 
+// Add a method to check if message is deleted for a user
+messageSchema.methods.isDeletedFor = function(userId) {
+  return this.deletedFor.includes(userId);
+};
+
+// Add static method to delete chat
+messageSchema.statics.deleteChat = async function(userId, chatId) {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  const chatObjectId = new mongoose.Types.ObjectId(chatId);
+
+  return this.updateMany(
+    {
+      $or: [
+        { sender: userObjectId, receiver: chatObjectId },
+        { sender: chatObjectId, receiver: userObjectId }
+      ]
+    },
+    {
+      $addToSet: { deletedFor: userObjectId }
+    }
+  );
+};
+
 // Virtual for checking if message is read
 messageSchema.virtual('isRead').get(function() {
   return this.status === 'seen';

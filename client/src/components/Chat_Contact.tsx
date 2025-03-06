@@ -13,13 +13,20 @@ interface Contact {
   lastMessage?: string;
 }
 
+// Add isAddContactOpen to props
 interface ChatContactsProps {
   contact: Contact;
   selectedChat: Contact | null;
   setSelectedChat: (contact: Contact) => void;
+  isAddContactOpen?: boolean; // Add this new prop
 }
 
-const Chat_Contacts = ({ contact, selectedChat, setSelectedChat }: ChatContactsProps) => {
+const Chat_Contacts = ({ 
+  contact, 
+  selectedChat, 
+  setSelectedChat,
+  isAddContactOpen = false // Default to false
+}: ChatContactsProps) => {
   const fullName = `${contact.firstName} ${contact.lastName}`;
 
   return (
@@ -32,6 +39,7 @@ const Chat_Contacts = ({ contact, selectedChat, setSelectedChat }: ChatContactsP
         transition-all duration-200 ease-in-out
         hover:bg-base-200/50
         relative
+        ${isAddContactOpen ? '-z-10' : ''}
         ${selectedChat?._id === contact._id ? 
           "bg-primary/10 shadow-sm border border-primary/20" : 
           "hover:translate-x-1"

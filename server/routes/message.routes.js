@@ -11,7 +11,8 @@ import {
   addReaction,
   removeReaction,
   replyToMessage,
-  getUnreadMessages
+  getUnreadMessages,
+  deleteChat
 } from '../controllers/message.controller.js';
 
 const router = express.Router();
@@ -31,5 +32,11 @@ router.put('/edit/:messageId', protect, editMessage);
 router.post('/reply/:messageId', protect, upload.single('file'), replyToMessage);
 router.post('/reaction/:messageId', protect, addReaction);
 router.delete('/reaction/:messageId', protect, removeReaction);
+
+// New route for deleting chat
+router.delete('/chats/:chatId', protect, deleteChat);
+
+// Update the reaction routes
+router.delete('/reactions/:messageId/:reactionType', protect, removeReaction);
 
 export default router;

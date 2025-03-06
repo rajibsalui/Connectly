@@ -1,8 +1,17 @@
+'use client'
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-import { IoPersonAdd, IoSearch, IoClose, IoCheckmarkCircle } from 'react-icons/io5';
+import { 
+  IoPersonAdd, 
+  IoSearch, 
+  IoClose, 
+  IoCheckmarkCircle,
+  IoFilter,
+  IoMailOutline,
+  IoPersonOutline 
+} from 'react-icons/io5';
 import { useParams } from 'next/navigation';
 
 interface User {
@@ -101,81 +110,101 @@ const AddContactPopup: React.FC<AddContactPopupProps> = ({ isOpen, onClose }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="relative inset-0 bg-base-200/95 backdrop-blur-md flex items-center justify-center z-50">
-      <div className="bg-base-100 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-base-100 rounded-xl shadow-2xl w-full max-w-3xl animate-fadeIn">
         {/* Header */}
         <div className="p-6 border-b border-base-200">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-3">
-                <IoPersonAdd className="text-primary w-7 h-7" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <IoPersonAdd className="text-primary w-6 h-6" />
+                </div>
                 Add New Contacts
               </h2>
-              <p className="text-base-content/60 mt-1">Connect with other users on the platform</p>
+              <p className="text-base-content/60 mt-1">
+                Find and connect with other users
+              </p>
             </div>
             <button 
               onClick={onClose}
-              className="btn btn-ghost btn-circle hover:bg-base-200/70"
+              className="btn btn-ghost btn-circle btn-sm hover:bg-base-200"
             >
-              <IoClose className="w-6 h-6" />
+              <IoClose className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="mt-6 relative">
-            <IoSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/60 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              className="input input-bordered w-full pl-12 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          {/* Search Bar */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <IoSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/60 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                className="input input-bordered w-full pl-12 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <button className="btn btn-ghost btn-square" title="Filter">
+              <IoFilter className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
         {/* User List */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="overflow-y-auto max-h-[50vh] p-4">
           {loading ? (
-            <div className="flex justify-center items-center h-full">
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
               <span className="loading loading-spinner loading-lg text-primary"></span>
+              <p className="text-base-content/70">Loading contacts...</p>
             </div>
           ) : (
-            <div className="divide-y divide-base-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredUsers.map((user) => (
                 <div
                   key={user._id}
-                  className={`
-                    flex items-center px-4 py-2 cursor-pointer
-                    transition-all duration-200 ease-in-out
-                    hover:bg-base-200/70 rounded-xl
-                    ${selectedUsers.includes(user._id) ? 'bg-primary/10' : ''}
-                  `}
                   onClick={() => toggleUserSelection(user._id)}
+                  className={`
+                    group relative overflow-hidden
+                    flex items-center p-3 cursor-pointer
+                    transition-all duration-200
+                    hover:bg-base-200/70 rounded-xl
+                    ${selectedUsers.includes(user._id) ? 'bg-primary/5 ring-1 ring-primary' : ''}
+                  `}
                 >
-                  <div className="relative">
+                  <div className="relative flex-shrink-0">
                     <div className={`
-                      rounded-xl overflow-hidden w-14 h-14
+                      w-12 h-12 rounded-xl overflow-hidden
                       ${selectedUsers.includes(user._id) ? 'ring-2 ring-primary ring-offset-2' : ''}
+                      transition-all duration-200
                     `}>
                       <Image
                         src={user.photoURL || '/default-avatar.png'}
                         alt={`${user.firstName}'s avatar`}
-                        width={56}
-                        height={56}
-                        className="rounded-xl object-cover w-full h-full"
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
                       />
                     </div>
                     {selectedUsers.includes(user._id) && (
-                      <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5">
-                        <IoCheckmarkCircle className="w-5 h-5 text-primary-content" />
+                      <div className="absolute -bottom-1 -right-1 bg-primary text-primary-content rounded-full p-0.5">
+                        <IoCheckmarkCircle className="w-4 h-4" />
                       </div>
                     )}
                   </div>
-                  <div className="ml-4 flex-1 min-w-0">
-                    <p className="font-medium truncate">
+
+                  <div className="ml-3 flex-1 min-w-0">
+                    <p className="font-medium truncate flex items-center gap-2">
                       {user.firstName} {user.lastName}
+                      <span className="badge badge-sm badge-ghost">
+                        <IoPersonOutline className="w-3 h-3" />
+                      </span>
                     </p>
-                    <p className="text-sm text-base-content/60 truncate">{user.email}</p>
+                    <p className="text-sm text-base-content/60 truncate flex items-center gap-1">
+                      <IoMailOutline className="w-3 h-3 flex-shrink-0" />
+                      {user.email}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -184,31 +213,35 @@ const AddContactPopup: React.FC<AddContactPopupProps> = ({ isOpen, onClose }) =>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-base-200 bg-base-200/30 backdrop-blur-sm">
-          <div className="flex items-center justify-between max-w-3xl mx-auto">
-            {/* <div className="flex items-center gap-2">
+        <div className="p-4 border-t border-base-200 bg-base-200/30 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
               {selectedUsers.length > 0 && (
-                <div className="badge badge-primary badge-outline tracking-tighter leading-none">
-                  <p>{selectedUsers.length} selected</p>
+                <div className="badge badge-primary">
+                  {selectedUsers.length} selected
                 </div>
               )}
-              <p className="text-base-content/70 text-sm">
-                {selectedUsers.length > 0 ? 'Ready to add contacts' : 'Select users to add as contacts'}
-              </p>
-            </div> */}
-            <div className="flex gap-3">
+            </div>
+            <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="btn btn-ghost hover:bg-base-200/70"
+                className="btn btn-ghost btn-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddContacts}
                 disabled={selectedUsers.length === 0}
-                className="btn btn-primary min-w-[120px] disabled:opacity-50"
+                className="btn btn-primary btn-sm"
               >
-                {selectedUsers.length > 0 ? `Add ${selectedUsers.length} Contact${selectedUsers.length > 1 ? 's' : ''}` : 'Select Users'}
+                {selectedUsers.length === 0 ? (
+                  'Select Contacts'
+                ) : (
+                  <>
+                    Add {selectedUsers.length} Contact{selectedUsers.length > 1 ? 's' : ''}
+                    <IoPersonAdd className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </div>

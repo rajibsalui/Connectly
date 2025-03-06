@@ -1,58 +1,54 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-
-type Theme = 'light' | 'dark' | 'cupcake' | 'bumblebee' | 'emerald' | 'corporate' | 'synthwave' | 'retro' | 'cyberpunk' | 'valentine' | 'aqua' | 'luxury';
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  theme: string;
+  setTheme: (theme: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
-  setTheme: () => null,
+  theme: "light",
+  setTheme: () => {},
 });
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Check if we're in the browser
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as Theme;
-      const validThemes: Theme[] = ['light', 'dark', 'cupcake', 'bumblebee', 'emerald', 'corporate', 'synthwave', 'retro', 'cyberpunk', 'valentine', 'aqua', 'luxury'];
-      if (savedTheme && validThemes.includes(savedTheme)) {
-        return savedTheme;
-      }
-    }
-    return 'light';
-  });
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState("light");
 
   useEffect(() => {
-    // Apply theme on mount and theme changes
-    if (typeof window !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
+    // Initialize theme
+    const storedTheme = localStorage.getItem("theme") || "light";
+    setTheme(storedTheme);
+    document.documentElement.setAttribute("data-theme", storedTheme);
+    setMounted(true);
+  }, []);
 
-  const handleThemeChange = (newTheme: Theme) => {
-    const validThemes: Theme[] = ['light', 'dark', 'cupcake', 'bumblebee', 'emerald', 'corporate', 'synthwave', 'retro', 'cyberpunk', 'valentine', 'aqua', 'luxury'];
-    if (validThemes.includes(newTheme)) {
+  const handleThemeChange = (newTheme: string) => {
+    // Force a re-render by removing the attribute first
+    document.documentElement.removeAttribute("data-theme");
+    // Wait for next tick to apply new theme
+    setTimeout(() => {
+      document.documentElement.setAttribute("data-theme", newTheme);
       setTheme(newTheme);
-    }
+      localStorage.setItem("theme", newTheme);
+    }, 0);
   };
+
+  if (!mounted) {
+    return <div className="hidden">{children}</div>;
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme: handleThemeChange }}>
       {children}
     </ThemeContext.Provider>
   );
-};
+}
 
-// Custom hook with error handling
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;
 };
