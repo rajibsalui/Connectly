@@ -12,6 +12,9 @@ import {
   IoArrowBack,
   IoImageOutline,
   IoCalendarOutline,
+  IoPhonePortraitOutline,
+  IoCheckmarkCircle,
+  IoCloseCircle,
 } from "react-icons/io5";
 
 const ProfilePage = () => {
@@ -23,7 +26,9 @@ const ProfilePage = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUserId = localStorage.getItem("userId");
-
+    if (storedUserId) {
+      getUser(storedUserId);
+    }
     if (!token) {
       router.push("/login");
       return;
@@ -35,10 +40,11 @@ const ProfilePage = () => {
   }, [router]);
 
   const handleBack = () => {
+    const localuserId = localStorage.getItem("userId");
     if (userId) {
       router.push(`/chat/${userId}`);
     } else {
-      router.push('/chat');
+      router.push(`/chat/${localuserId}`);
     }
   };
 
@@ -94,17 +100,59 @@ const ProfilePage = () => {
             {/* Profile Info */}
             <div className="divider my-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Contact Information */}
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
+                
+                {/* Email */}
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <IoMailOutline className="w-5 h-5 text-primary" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm text-base-content/60">Email</p>
-                    <p className="font-medium">{user?.email}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{user?.email}</p>
+                      {user?.emailVerified ? (
+                        <span className="flex items-center text-success text-sm">
+                          <IoCheckmarkCircle className="w-4 h-4 mr-1" />
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-error text-sm">
+                          <IoCloseCircle className="w-4 h-4 mr-1" />
+                          Not Verified
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Phone */}
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <IoPhonePortraitOutline className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-base-content/60">Phone Number</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{user?.phoneNumber || 'Not added'}</p>
+                      {user?.phoneVerified ? (
+                        <span className="flex items-center text-success text-sm">
+                          <IoCheckmarkCircle className="w-4 h-4 mr-1" />
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-error text-sm">
+                          <IoCloseCircle className="w-4 h-4 mr-1" />
+                          Not Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Member Since */}
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <IoCalendarOutline className="w-5 h-5 text-primary" />
@@ -122,8 +170,31 @@ const ProfilePage = () => {
                 </div>
               </div>
 
+              {/* Account Settings */}
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
+                
+                {/* Profile Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="stat bg-base-200 rounded-box">
+                    <div className="stat-title">Verification Status</div>
+                    <div className="stat-value text-lg">
+                      {user?.emailVerified && user?.phoneVerified ? (
+                        <span className="text-success">Complete</span>
+                      ) : (
+                        <span className="text-warning">Incomplete</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="stat bg-base-200 rounded-box">
+                    <div className="stat-title">Account Type</div>
+                    <div className="stat-value text-lg">
+                      {user?.isAdmin ? 'Admin' : 'User'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
                 <button
                   className="btn btn-outline w-full justify-start gap-3 hover:bg-primary hover:text-primary-content"
                   onClick={() => setShowProfileModal(true)}
@@ -131,6 +202,16 @@ const ProfilePage = () => {
                   <IoSettingsOutline className="w-5 h-5" />
                   Update Profile Settings
                 </button>
+
+                {(!user?.emailVerified || !user?.phoneVerified) && (
+                  <button
+                    className="btn btn-warning w-full justify-start gap-3"
+                    onClick={() => setShowProfileModal(true)}
+                  >
+                    <IoCheckmarkCircle className="w-5 h-5" />
+                    Complete Verification
+                  </button>
+                )}
               </div>
             </div>
           </div>
