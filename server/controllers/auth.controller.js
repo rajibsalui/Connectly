@@ -69,7 +69,7 @@ import bcrypt from "bcryptjs";
 
 export const register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, username } = req.body;
+    const { firstName, lastName, email, password, username, phone } = req.body;
 
     // Validate input
     if (!firstName || !lastName || !email || !password || !username) {
@@ -86,7 +86,7 @@ export const register = async (req, res) => {
         { username: username.toLowerCase() },
       ],
     });
-
+    
     if (userExists) {
       return res.status(400).json({
         success: false,
@@ -101,7 +101,8 @@ export const register = async (req, res) => {
       lastName,
       username: username.toLowerCase(),
       email: email.toLowerCase(),
-      password
+      password,
+      phoneNumber: phone,
     });
 
     // Generate token
@@ -307,6 +308,7 @@ export const updateProfile = async (req, res) => {
       lastName,
       username,
       email,
+      phoneNumber,
       currentPassword,
       newPassword,
     } = req.body;
@@ -318,6 +320,25 @@ export const updateProfile = async (req, res) => {
         success: false,
         message: "User not found",
       });
+    }
+
+    // Handle phone number update with verification check
+    if (phoneNumber && phoneNumber !== user.phoneNumber) {
+      const isVerified = await Verification.findOne({
+        userId: user._id,
+        phone: phoneNumber,
+        phoneVerified: true,
+        expiresAt: { $gt: new Date() }
+      });
+
+      if (!isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number must be verified before updating",
+          requiresVerification: true
+        });
+      }
+      user.phoneNumber = phoneNumber;
     }
 
     // Check file size if avatar is being updated
@@ -442,6 +463,10 @@ export const checkAuth = async (req, res) => {
         lastSeen: user.lastSeen,
         contacts: user.contacts,
         createdAt: user.createdAt,
+        emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+        authProvider: user.authProvider,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (error) {
@@ -449,6 +474,43 @@ export const checkAuth = async (req, res) => {
       success: false,
       isLoggedIn: false,
       message: "Error checking authentication status",
+    });
+  }
+};
+
+
+
+export const verifyPhoneNumber = async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    const userId = req.user.id;
+
+    const verification = await Verification.findOne({
+      userId,
+      phone,
+      phoneCode: code,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!verification) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification code"
+      });
+    }
+
+    verification.phoneVerified = true;
+    await verification.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Phone number verified successfully"
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error verifying phone number"
     });
   }
 };

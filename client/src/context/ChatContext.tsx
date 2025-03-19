@@ -1,6 +1,7 @@
 'use client'
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { config } from '../config/config';
+import { useSocket } from './SocketContext';
 
 interface Message {
   _id: string;
@@ -11,6 +12,11 @@ interface Message {
   createdAt: Date;
   read: boolean;
   delivered: boolean;
+  deletedFor?: string[]; // Add this line
+  reactions?: {
+    type: string;
+    users: string[];
+  }[];
 }
 
 interface MessageContent {
@@ -28,17 +34,12 @@ interface ChatContextType {
   updateMessage: (messageId: string, content: string) => Promise<Message>;
   markMessageAsRead: (messageId: string) => Promise<void>;
   markMessageAsDelivered: (messageId: string) => Promise<void>;
+  deleteChat: (chatId: string) => Promise<void>;
+  addReaction: (messageId: string, reactionType: string) => Promise<void>;
+  removeReaction: (messageId: string, reactionType: string) => Promise<void>;
 }
 
-const ChatContext = createContext<ChatContextType>({
-  messages: [],
-  getMessages: async () => [],
-  sendMessage: async () => ({} as Message),
-  deleteMessage: async () => {},
-  updateMessage: async () => ({} as Message),
-  markMessageAsRead: async () => {},
-  markMessageAsDelivered: async () => {}
-});
+export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const useChat = () => {
   const context = useContext(ChatContext);
@@ -52,8 +53,35 @@ interface ChatProviderProps {
   children: ReactNode;
 }
 
-export const ChatProvider = ({ children }: ChatProviderProps) => {
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { socket } = useSocket();
+  const [initialized, setInitialized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // Add check for client-side rendering
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (socket && !initialized) {
+      // Initialize socket listeners here
+      socket.on('connect', () => {
+        setInitialized(true);
+      });
+
+      return () => {
+        socket.off('connect');
+        setInitialized(false);
+      };
+    }
+  }, [socket, initialized]);
+
+  if (!mounted) {
+    return null; // or a loading state
+  }
 
   const getMessages = async (chatId: string): Promise<Message[]> => {
     try {
@@ -76,7 +104,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       }
 
       const data = await response.json();
-      // console.log(data)
+      console.log(data.messages)
       setMessages(data.messages);
       return data.messages;
     } catch (error) {
@@ -116,6 +144,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       const newMessage = await response.json();
       console.log(newMessage);
       setMessages(prev => [...prev, newMessage.message]);
+      // console.log(messages)
       return newMessage;
     } catch (error) {
       console.error('Error sending message:', error);
@@ -167,13 +196,17 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update message');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update message');
       }
 
-      const updatedMessage = await response.json();
+      const { message: updatedMessage } = await response.json();
+
+      // Update messages in state
       setMessages(prev => prev.map(msg => 
         msg._id === messageId ? updatedMessage : msg
       ));
+
       return updatedMessage;
     } catch (error) {
       console.error('Error updating message:', error);
@@ -237,6 +270,103 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     }
   };
 
+  const deleteChat = async (chatId: string): Promise<void> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+  
+      const response = await fetch(`${config.serverUrl}/messages/chats/${chatId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log(response)
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete chat');
+      }
+  
+      setMessages([]); // Clear messages for this chat
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      throw error;
+    }
+  };
+
+  const addReaction = async (messageId: string, reactionType: string): Promise<void> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Authentication token not found');
+
+      const response = await fetch(`${config.serverUrl}/messages/reaction/${messageId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reaction : reactionType })
+      });
+
+      if (!response.ok) throw new Error('Failed to add reaction');
+
+      const { message: updatedMessage } = await response.json();
+      setMessages(prev => prev.map(msg => 
+        msg._id === messageId ? updatedMessage : msg
+      ));
+      console.log(messages)
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      throw error;
+    }
+  };
+
+  const removeReaction = async (messageId: string, reactionType: string): Promise<void> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Authentication token not found');
+
+      const response = await fetch(`${config.serverUrl}/messages/reactions/${messageId}/${reactionType}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to remove reaction');
+      }
+
+      const { message: updatedMessage } = await response.json();
+
+      // Update messages in state
+      setMessages(prev => prev.map(msg => 
+        msg._id === messageId ? updatedMessage : msg
+      ));
+
+      // Listen for socket event for real-time updates
+      socket?.on('message:reaction', ({ messageId, updatedMessage }) => {
+        setMessages(prev => prev.map(msg => 
+          msg._id === messageId ? updatedMessage : msg
+        ));
+      });
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      throw error;
+    }
+  };
+
+  // const updateMessageReactions = useCallback((messageId: string, reactions: any[]) => {
+  //   setMessages(prev => prev.map(msg => 
+  //     msg._id === messageId ? { ...msg, reactions } : msg
+  //   ));
+  // }, []);
+
   const value = {
     messages,
     getMessages,
@@ -244,7 +374,10 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     deleteMessage,
     updateMessage,
     markMessageAsRead,
-    markMessageAsDelivered
+    markMessageAsDelivered,
+    deleteChat,
+    addReaction,
+    removeReaction
   };
 
   return (

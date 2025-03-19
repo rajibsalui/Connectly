@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       default: "",
+      sparse: true
     },
     username: {
       type: String,
@@ -63,6 +64,18 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false
+    },
+    phoneVerified: {
+      type: Boolean,
+      default: false
+    },
+    phone: {
+      type: String,
+      sparse: true
+    }
   },
   {
     timestamps: true,

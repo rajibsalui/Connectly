@@ -9,8 +9,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useChat } from "@/context/ChatContext";
 import { config } from "../config/config";
-import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
+import { IoAddOutline, IoChatbubbleEllipsesOutline } from "react-icons/io5";
 import { useSocket } from "@/context/SocketContext";
+import AddContactPopup from "./Add_Contact";
 
 interface Contact {
   _id: string;
@@ -40,12 +41,14 @@ const Chat = () => {
   const [selectedChat, setSelectedChat] = useState<Contact | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [chatId, setChatId] = useState<string | null>(null);
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(
     null
   ) as React.RefObject<HTMLDivElement>;
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
-  const { socket, connectSocket, disconnectSocket, isOnline, isTyping } = useSocket();
+  const { socket, connectSocket, disconnectSocket, isOnline, isTyping } =
+    useSocket();
 
   // Initialize socket connection
   useEffect(() => {
@@ -68,20 +71,23 @@ const Chat = () => {
     if (socket && user?._id) {
       socket.emit("setup", user._id);
 
-      socket.on("message received", async (data: { chatId: string, message: Message }) => {
-        if (data.chatId === chatId) {
-          // Mark message as delivered
-          getMessages(chatId);
-          await markMessageAsDelivered(data.message._id);
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      socket.on(
+        "message received",
+        async (data: { chatId: string; message: Message }) => {
+          if (data.chatId === chatId) {
+            // Mark message as delivered
+            getMessages(chatId);
+            await markMessageAsDelivered(data.message._id);
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }
         }
-      });
+      );
 
       return () => {
         socket.off("message received");
       };
     }
-  }, [socket, user, chatId,getMessages, markMessageAsDelivered]);
+  }, [socket, user, chatId, getMessages, markMessageAsDelivered]);
 
   // Fetch contacts
   useEffect(() => {
@@ -101,7 +107,7 @@ const Chat = () => {
     if (user?.id) {
       fetchContacts();
     }
-  }, [user]);
+  }, [user, isAddContactOpen, setIsAddContactOpen]);
 
   const handleChatSelect = async (contact: Contact) => {
     try {
@@ -112,7 +118,6 @@ const Chat = () => {
       }
       setSelectedChat(contact);
       setIsLoading(true);
-
 
       // const data = await response.json();
       setChatId(contact._id);
@@ -182,8 +187,21 @@ const Chat = () => {
       <div className="flex-1 ml-20 flex">
         {/* Contacts Section */}
         <div className="w-80 border-r border-base-300 bg-base-200/50 backdrop-blur-md">
-          <Chat_Search />
-          <div className="overflow-y-auto h-[calc(100vh-80px)] scrollbar-thin scrollbar-thumb-base-300">
+          <div className="flex items-center gap-3">
+            <Chat_Search
+              isAddContactOpen={isAddContactOpen}
+              setIsAddContactOpen={setIsAddContactOpen}
+            />
+            <button
+              onClick={() => setIsAddContactOpen(true)}
+              className="btn btn-primary btn-circle hover:btn-primary-focus transition-all duration-200"
+              title="Add New Contact"
+            >
+              <IoAddOutline className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="overflow-y-auto h-[calc(100vh-80px)] -z-10 scrollbar-thin scrollbar-thumb-base-300">
             {isLoading ? (
               <div className="flex z-30 justify-center items-center h-full">
                 <div className="flex flex-col items-center gap-2">
@@ -203,6 +221,7 @@ const Chat = () => {
                   key={contact._id}
                   contact={contact}
                   selectedChat={selectedChat}
+                  isAddContactOpen={isAddContactOpen} // Pass the state
                   setSelectedChat={handleChatSelect}
                 />
               ))
@@ -212,6 +231,10 @@ const Chat = () => {
 
         {/* Chat Section */}
         <div className="flex-1 flex flex-col bg-base-100">
+        <AddContactPopup
+            isOpen={isAddContactOpen}
+            onClose={() => setIsAddContactOpen(false)}
+          />
           {selectedChat ? (
             <Chat_Selected
               selectedChat={selectedChat}
@@ -234,7 +257,8 @@ const Chat = () => {
                     Welcome to Connectly
                   </h2>
                   <p className="text-base-content/70 text-lg max-w-sm mb-8">
-                    Connect and chat with your contacts in real-time. Select a conversation from the left to get started.
+                    Connect and chat with your contacts in real-time. Select a
+                    conversation from the left to get started.
                   </p>
                   <div className="card-actions flex gap-4">
                     <div className="badge badge-lg badge-outline gap-2">

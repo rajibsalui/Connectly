@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Message from '../models/message.model.js';
 import User from '../models/user.model.js';
 import { uploadFile } from '../utils/uploadFile.js';
@@ -176,18 +177,30 @@ export const deleteMessage = async (req, res) => {
       });
     }
 
-    // Add user to deletedFor array
-    message.deletedFor.push(req.user.id);
-    await message.save();
+    // Delete the message from database
+    await Message.findByIdAndDelete(messageId);
+
+    // Emit socket event for real-time update
+    if (req.io) {
+      req.io.to(message.sender.toString()).emit('message:deleted', {
+        messageId,
+        deletedBy: req.user.id
+      });
+      req.io.to(message.receiver.toString()).emit('message:deleted', {
+        messageId,
+        deletedBy: req.user.id
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Message deleted successfully'
+      message: 'Message deleted permanently'
     });
   } catch (error) {
+    console.error('Delete message error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Error deleting message'
     });
   }
 };
@@ -272,6 +285,10 @@ export const editMessage = async (req, res) => {
 
     await message.edit(content, req.user.id);
 
+    // const populatedMessage = await Message.findById(newMessage._id)
+    //   .populate('sender', 'username avatar')
+    //   .populate('receiver', 'username avatar');
+
     const updatedMessage = await Message.findById(messageId)
       .populate('sender receiver', 'username avatar')
       .populate('editHistory.editedBy', 'username avatar');
@@ -323,7 +340,7 @@ export const addReaction = async (req, res) => {
 // Remove reaction from message
 export const removeReaction = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const { messageId, reactionType } = req.params;
 
     const message = await Message.findById(messageId);
     if (!message) {
@@ -333,16 +350,51 @@ export const removeReaction = async (req, res) => {
       });
     }
 
-    await message.removeReaction(req.user.id);
+    // Remove the reaction
+    const reactionIndex = message.reactions?.findIndex(r => 
+      r.type === reactionType && r.users.includes(req.user.id)
+    );
+
+    if (reactionIndex === -1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reaction not found'
+      });
+    }
+
+    // Remove user from the reaction's users array
+    message.reactions[reactionIndex].users = message.reactions[reactionIndex].users
+      .filter(userId => userId.toString() !== req.user.id);
+
+    // If no users left for this reaction, remove the reaction entirely
+    if (message.reactions[reactionIndex].users.length === 0) {
+      message.reactions.splice(reactionIndex, 1);
+    }
+
+    await message.save();
+
+    // Return updated message with populated fields
+    const updatedMessage = await Message.findById(messageId)
+      .populate('sender', 'username avatar')
+      .populate('receiver', 'username avatar');
+
+    // Emit socket event if available
+    if (req.io) {
+      req.io.to(message.sender.toString()).to(message.receiver.toString()).emit('message:reaction', {
+        messageId,
+        updatedMessage
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Reaction removed successfully'
+      message: updatedMessage
     });
   } catch (error) {
+    console.error('Remove reaction error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Error removing reaction'
     });
   }
 };
@@ -432,6 +484,62 @@ export const markMessageAsDelivered = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message
+    });
+  }
+};
+
+// Delete chat
+export const deleteChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user.id;
+
+    // Convert string IDs to ObjectId
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const chatObjectId = new mongoose.Types.ObjectId(chatId);
+
+    // Verify if the user is part of the chat
+    const messages = await Message.find({
+      $or: [
+        { sender: userObjectId, receiver: chatObjectId },
+        { sender: chatObjectId, receiver: userObjectId }
+      ]
+    });
+
+    if (messages.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found or no messages exist'
+      });
+    }
+
+    // Delete all messages between these users
+    const deleteResult = await Message.deleteMany({
+      $or: [
+        { sender: userObjectId, receiver: chatObjectId },
+        { sender: chatObjectId, receiver: userObjectId }
+      ]
+    });
+
+    // Add socket event emission for real-time updates
+    if (req.io) {
+      req.io.to(chatId).emit('chat:deleted', {
+        chatId,
+        deletedBy: userId,
+        permanent: true
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Chat deleted permanently',
+      deletedCount: deleteResult.deletedCount
+    });
+  } catch (error) {
+    console.error('Delete chat error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error deleting chat'
     });
   }
 };

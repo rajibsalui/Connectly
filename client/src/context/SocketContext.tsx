@@ -31,6 +31,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [typingUsers, setTypingUsers] = useState<Map<string, boolean>>(new Map());
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // console.log(user)
@@ -105,6 +110,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     connectSocket,
     disconnectSocket,
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 };

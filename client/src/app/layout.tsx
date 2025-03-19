@@ -1,62 +1,34 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-// import '../styles/globals.css';
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { Toaster } from "react-hot-toast";
-import ChatProvider from "@/context/ChatContext";
-import { SocketProvider } from "@/context/SocketContext";
+import Providers from "@/components/Providers";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
   subsets: ["latin"],
+  variable: "--font-geist-sans",
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
   title: "CONNECTLY",
-  description:
-    "It is a chat and group video calling website, with AI chat features",
-  icons: {
-    icon: [
-      {
-        url: "/favicon.ico",
-        sizes: "any",
-      },
-      {
-        url: "/chat_app.svg",
-        type: "image/png",
-        sizes: "32x32",
-      },
-    ],
-  },
+  description: "It is a chat and group video calling website, with AI chat features",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        cz-shortcut-listen={"true"}
-      >
+    <html lang="en" cz-shortcut-listen="true" suppressHydrationWarning >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          <SocketProvider>
-            <ChatProvider>
-              <ThemeProvider>
-                <Toaster />
-                {children}
-              </ThemeProvider>
-            </ChatProvider>
-          </SocketProvider>
+          <Providers>{children}</Providers>
         </AuthProvider>
       </body>
     </html>

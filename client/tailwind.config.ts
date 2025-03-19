@@ -1,47 +1,13 @@
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  daisyui: {
-    themes: [
-      "light",
-      "dark",
-      "cupcake",
-      "bumblebee",
-      "emerald",
-      "corporate",
-      "synthwave",
-      "retro",
-      "cyberpunk",
-      "valentine",
-      "halloween",
-      "garden",
-      "forest",
-      "aqua",
-      "lofi",
-      "pastel",
-      "fantasy",
-      "wireframe",
-      "black",
-      "luxury",
-      "dracula",
-      "cmyk",
-      "autumn",
-      "business",
-      "acid",
-      "lemonade",
-      "night",
-      "coffee",
-      "winter",
-      "dim",
-      "nord",
-      "sunset",
-    ],
-  },
+  plugins: [require("daisyui")],
+  darkMode: ["class", '[data-theme="dark"]'],
   theme: {
     extend: {
       animation: {
@@ -65,7 +31,53 @@ export default {
       },
     },
   },
-  plugins: [
-    require('daisyui')
-  ],
-} satisfies Config;
+  daisyui: {
+    themes: [
+      {
+        light: {
+          "primary": "#0284c7",
+          "secondary": "#7c3aed",
+          "accent": "#f59e0b",
+          "neutral": "#2a323c",
+          "base-100": "#f3f4f6",
+          "base-200": "#e5e7eb",
+          "base-300": "#d1d5db",
+          "base-content": "#1f2937",
+          "info": "#3abff8",
+          "success": "#36d399",
+          "warning": "#fbbd23",
+          "error": "#f87272",
+        },
+      },
+      {
+        dark: {
+          "primary": "#0ea5e9",
+          "secondary": "#8b5cf6",
+          "accent": "#fbbf24",
+          "neutral": "#1f2937",
+          "base-100": "#1f2937",
+          "base-200": "#111827",
+          "base-300": "#374151",
+          "base-content": "#f3f4f6",
+          "info": "#3abff8",
+          "success": "#36d399",
+          "warning": "#fbbd23",
+          "error": "#f87272",
+        },
+      },
+      "cupcake",
+      "bumblebee",
+      "emerald",
+      "corporate",
+      "synthwave",
+      "retro",
+      "cyberpunk",
+      "valentine",
+      "aqua",
+      "winter",
+      "luxury"
+    ],
+  },
+};
+
+export default config;
