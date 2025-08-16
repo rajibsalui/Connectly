@@ -19,6 +19,7 @@ import configureSocket from './config/socket.config.js';
 import authRoutes from './routes/auth.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import userRoutes from './routes/user.routes.js';
+import videoRoutes from './routes/video.routes.js';
 // import chatRoutes from './routes/chat.routes.js';
 
 // Import middleware
@@ -68,6 +69,7 @@ const apiRouter = express.Router();
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/messages', messageRoutes);
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/video', videoRoutes);
 // apiRouter.use('/chat', chatRoutes);
 
 // Mount API routes
